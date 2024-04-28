@@ -43,7 +43,7 @@ func InitBot() {
 func ServerAPI(cfg *config.Config) {
 	gin.SetMode(cfg.Mode)
 	r := gin.Default()
-	r.Use(Cors())
+	//r.Use(Cors())
 	r.Use(RequestLoggerMiddleware())
 
 	apiV1 := r.Group("/api/v1")
