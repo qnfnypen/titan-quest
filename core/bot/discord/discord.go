@@ -62,7 +62,7 @@ func RunDiscordBot(token string) {
 
 		invitesAfter, err := s.GuildInvites(m.GuildID)
 		if err != nil {
-			log.Fatal(err)
+			log.Print("GuildInvites", err)
 			return
 		}
 
