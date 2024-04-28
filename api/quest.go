@@ -601,8 +601,7 @@ func checkFollowTwitter(ctx context.Context, mission *model.Mission, username st
 	apiKey := GetUToolKeyByRoundRobin()
 
 	option := &swagger.TwitterFollowsApiToolsApiFollowingsIdsUsingGETOpts{
-		//UserId: optional.NewString(twitterUser.TwitterUserID),
-		UserId: optional.NewString("1357906704566943745"),
+		UserId: optional.NewString(twitterUser.TwitterUserID),
 	}
 	result, _, err := client.TwitterFollowsApiToolsApi.FollowingsIdsUsingGET(ctx, apiKey, option)
 	if err != nil {
