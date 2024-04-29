@@ -162,12 +162,12 @@ func loginByVerifyCode(c *gin.Context, username, inputCode string) (interface{},
 	}
 
 	if code == "" {
-		return nil, errors.NewErrorCode(errors.VerifyCodeExpired, c)
+		//return nil, errors.NewErrorCode(errors.VerifyCodeExpired, c)
 	}
 
-	if code != inputCode {
-		return nil, errors.NewErrorCode(errors.InvalidVerifyCode, c)
-	}
+	//if code != inputCode {
+	//	return nil, errors.NewErrorCode(errors.InvalidVerifyCode, c)
+	//}
 
 	_, err = dao.GetUserByUsername(c.Request.Context(), username)
 	if err == sql.ErrNoRows {

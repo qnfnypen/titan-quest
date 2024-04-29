@@ -25,6 +25,7 @@ import (
 	"github.com/valyala/fastjson"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -388,11 +389,11 @@ func QueryMissionHandler(c *gin.Context) {
 		}
 
 		switch mission.Type {
-		case 1:
+		case MissionTypeBasic:
 			basicMission = append(basicMission, mi)
-		case 2:
+		case MissionTypeDaily:
 			dailyMission = append(dailyMission, mi)
-		case 3:
+		case MissionTypeWeekly:
 			weeklyMission = append(weeklyMission, mi)
 		}
 	}
@@ -498,12 +499,12 @@ func CheckQuestHandler(c *gin.Context) {
 		option.Content = mission.OpenUrl
 	}
 
-	if mission.Type == 3 {
-		option.StartTime = carbon.Now().StartOfWeek().String()
+	if mission.Type == MissionTypeDaily {
+		option.StartTime = carbon.Now().StartOfDay().String()
 	}
 
-	if mission.Type == 2 {
-		option.StartTime = carbon.Now().StartOfDay().String()
+	if mission.Type == MissionTypeWeekly {
+		option.StartTime = carbon.Now().StartOfWeek().String()
 	}
 
 	ums, err := dao.GetUserMissionByMissionId(c.Request.Context(), username, missionId, option)
@@ -541,6 +542,12 @@ func CheckQuestHandler(c *gin.Context) {
 		err = checkLikeTweet(c.Request.Context(), mission, username, option)
 	case MissionIdJoinDiscord:
 		err = checkJoinDiscord(c.Request.Context(), mission, username, option)
+	case MissionIdBindingKOL:
+		err = checkBindingKOL(c.Request.Context(), mission, username, option)
+	case MissionIdVisitOfficialWebsite:
+		err = checkVisitOfficialWebsite(c.Request.Context(), mission, username, option)
+	case MissionIdVisitReferrerPage:
+		err = checkVisitReferrerPage(c.Request.Context(), mission, username, option)
 	case MissionIdJoinTelegram:
 		err = checkJoinTelegram(c.Request.Context(), mission, username, option)
 	case MissionIdQuoteTweet:
@@ -1124,6 +1131,49 @@ func checkJoinDiscord(ctx context.Context, mission *model.Mission, username stri
 	return nil
 }
 
+func checkBindingKOL(ctx context.Context, mission *model.Mission, username string, queryOpt dao.QueryOption) error {
+	userInfo, err := dao.GetUserByUsername(ctx, username)
+	if err != nil {
+		return err
+	}
+
+	if userInfo.FromKolRefCode == "" {
+		return errors.New("please complete mission first")
+	}
+
+	ums, err := dao.GetUserMissionByMissionId(ctx, username, mission.ID, queryOpt)
+	if err != nil {
+		log.Errorf("GetUserMissionByUser: %v", err)
+		return err
+	}
+
+	if len(ums) == 0 {
+		err = dao.AddUserMission(ctx, &model.UserMission{
+			Username:  username,
+			MissionID: mission.ID,
+			Type:      mission.Type,
+			Credit:    mission.Credit,
+			Content:   userInfo.FromKolRefCode,
+			CreatedAt: time.Now(),
+		})
+
+		if err != nil {
+			log.Errorf("AddUserMission: %v", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func checkVisitOfficialWebsite(ctx context.Context, mission *model.Mission, username string, queryOpt dao.QueryOption) error {
+	return errors.New("not implement")
+}
+
+func checkVisitReferrerPage(ctx context.Context, mission *model.Mission, username string, queryOpt dao.QueryOption) error {
+	return errors.New("not implement")
+}
+
 func checkInviteFriendsToDiscord(ctx context.Context, mission *model.Mission, username string, queryOpt dao.QueryOption) error {
 	discordUser, err := dao.GetDiscordOAuthByUsername(ctx, username)
 	if err != nil {
@@ -1231,4 +1281,88 @@ func PostTwitterLinkHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, respJSON(nil))
+}
+
+func BindingKOLReferralCodeHandler(c *gin.Context) {
+	claims := jwt.ExtractClaims(c)
+	username := claims[identityKey].(string)
+
+	var params = struct {
+		Code string `json:"code"`
+	}{}
+
+	if err := c.BindJSON(&params); err != nil {
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InvalidParams, c))
+		return
+	}
+
+	if params.Code == "" {
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InvalidReferralCode, c))
+		return
+	}
+
+	userInfo, err := dao.GetUserByUsername(c.Request.Context(), username)
+	if err != nil {
+		log.Errorf("GetUserByUsername: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
+		return
+	}
+
+	if userInfo.FromKolRefCode != "" {
+		c.JSON(http.StatusOK, respErrorCode(errorsx.ReferralCodeBound, c))
+		return
+	}
+
+	kolUserId, err := GetKOLUserId(c.Request.Context(), params.Code)
+	if err != nil || kolUserId == "" {
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InvalidVerifyCode, c))
+		return
+	}
+
+	err = dao.UpdateUserKOLReferralCode(c.Request.Context(), username, params.Code, kolUserId)
+	if err != nil {
+		log.Errorf("UpdateUserKOLReferralCode: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
+		return
+	}
+
+	c.JSON(http.StatusOK, respJSON(nil))
+}
+
+func GetKOLUserId(ctx context.Context, code string) (string, error) {
+	client := http.DefaultClient
+
+	requestURL := config.Cfg.TitanAPI.BasePath + "/v1/kol/code?code=" + code
+	request, err := http.NewRequest(http.MethodGet, requestURL, nil)
+	if err != nil {
+		log.Errorf("create request: %v", err)
+		return "", err
+	}
+
+	request.Header.Add("Authorization", "Bearer "+config.Cfg.TitanAPI.Key)
+	resp, err := client.Do(request)
+	if err != nil {
+		log.Errorf("get response: %v", err)
+		return "", err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.New(resp.Status)
+	}
+
+	result, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	v, err := fastjson.Parse(string(result))
+	if err != nil {
+		return "", errors.New(err.Error())
+	}
+
+	userId := v.Get("data").GetStringBytes("kol_user_id")
+
+	return string(userId), nil
 }

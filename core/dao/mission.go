@@ -97,7 +97,7 @@ func UpdateTwitterUserInfo(ctx context.Context, token string, twitterUserId, twi
 }
 
 func GetMissions(ctx context.Context) ([]*model.Mission, error) {
-	query := `select * from mission where status = 1 order by id`
+	query := `select * from mission where status = 1 order by sort_id`
 
 	var out []*model.Mission
 	err := DB.SelectContext(ctx, &out, query)
@@ -214,3 +214,22 @@ func GetUserTwitterLink(ctx context.Context, username string, missionId int64, s
 
 	return &out, nil
 }
+
+//func AddUserKOLRef(ctx context.Context, ref *model.UserKolRef) error {
+//	query := `insert into user_kol_ref(username, kol_referral_code, kol_user_id, created_at) values(:username, :kol_referral_code, :kol_user_id, :created_at)`
+//
+//	_, err := DB.NamedExecContext(ctx, query, ref)
+//	return err
+//}
+//
+//func GetUserKOLRef(ctx context.Context, username string) (*model.UserKolRef, error) {
+//	query := `select * from user_kol_ref where username = ?`
+//
+//	var out model.UserKolRef
+//	err := DB.GetContext(ctx, &out, query, username)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return &out, nil
+//}

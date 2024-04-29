@@ -18,6 +18,8 @@ const (
 	UnsupportedVerifyCodeType
 	GetVCFrequently
 	TimeoutCode
+	InvalidReferralCode
+	ReferralCodeBound
 
 	PassWordNotAllowed
 	UnauthorizedTwitter
@@ -45,6 +47,8 @@ var ErrMap = map[int]string{
 	UnsupportedVerifyCodeType:        "unsupported verify code type:不支持的验证码类型",
 	GetVCFrequently:                  "frequently request not allowed. please try again later.:请勿频繁获取验证码。请等待一段时间后再试。",
 	TimeoutCode:                      "request timeout, please try again later: 请求超时, 请稍后再试",
+	InvalidReferralCode:              "invalid referral code: 无效的邀请码",
+	ReferralCodeBound:                "referral code bound: 已绑定邀请码",
 	PassWordNotAllowed:               "password not allowed:密码错误",
 	UnauthorizedTwitter:              "Unauthorized Twitter: 未授权 Twitter",
 	UnauthorizedDiscord:              "Unauthorized Discord: 未授权 Discord",

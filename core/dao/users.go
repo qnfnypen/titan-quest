@@ -45,3 +45,8 @@ func GetUserIds(ctx context.Context) ([]string, error) {
 	}
 	return out, nil
 }
+
+func UpdateUserKOLReferralCode(ctx context.Context, username, kolReferralCode, kolUserId string) error {
+	_, err := DB.DB.ExecContext(ctx, `UPDATE users SET from_kol_ref_code = ?, from_kol_user_id = ?, updated_at = now() WHERE username = ?`, kolReferralCode, kolUserId, username)
+	return err
+}

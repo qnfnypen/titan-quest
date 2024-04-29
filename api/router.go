@@ -83,6 +83,7 @@ func ServerAPI(cfg *config.Config) {
 	quest.GET("/query_user_credits", QueryUserCreditsHandler)
 	quest.GET("/check", CheckQuestHandler)
 	quest.POST("/twitter_link", PostTwitterLinkHandler)
+	quest.POST("/kol_referral_code", BindingKOLReferralCodeHandler)
 
 	if err := r.Run(cfg.ApiListen); err != nil {
 		log.Fatalf("starting server: %v\n", err)

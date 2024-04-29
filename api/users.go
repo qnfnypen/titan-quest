@@ -26,7 +26,7 @@ func GetUserInfoHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, respJSON(user))
+	c.JSON(http.StatusOK, respJSON(user.ToResponseUser()))
 }
 
 type NonceStringType string
@@ -215,18 +215,3 @@ func cacheVerifyCode(ctx context.Context, key, verifyCode string) error {
 
 	return nil
 }
-
-const (
-	MissionIdConnectWallet int64 = iota + 1001
-	MissionIdFollowTwitter
-	MissionIdRetweet
-	MissionIdLikeTwitter
-	MissionIdJoinDiscord
-	MissionIdJoinTelegram
-)
-
-const (
-	MissionIdQuoteTweet int64 = iota + 1106
-	MissionIdPostTweet
-	MissionIdInviteFriendsToDiscord
-)

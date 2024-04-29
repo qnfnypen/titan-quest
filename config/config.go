@@ -23,6 +23,13 @@ type Config struct {
 	TelegramCallback        string
 	RedirectURI             string
 	DisableDiscordBot       bool
+
+	TitanAPI TitanAPIConfig
+}
+
+type TitanAPIConfig struct {
+	BasePath string
+	Key      string
 }
 
 type EmailConfig struct {

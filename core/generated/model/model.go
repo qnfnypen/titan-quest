@@ -13,6 +13,32 @@ const (
 
 type errorCode int
 
+type ResponseUser struct {
+	Username       string    `db:"username" json:"username"`
+	UserEmail      string    `db:"user_email" json:"user_email"`
+	WalletAddress  string    `db:"wallet_address" json:"wallet_address"`
+	Role           int32     `db:"role" json:"role"`
+	CreatedAt      time.Time `db:"created_at" json:"created_at"`
+	ReferralCode   string    `db:"referral_code" json:"referral_code"`
+	Referrer       string    `db:"referrer" json:"referrer"`
+	Credits        int64     `db:"credits" json:"credits"`
+	FromKolRefCode string    `db:"from_kol_ref_code" json:"from_kol_ref_code"`
+}
+
+func (u *User) ToResponseUser() *ResponseUser {
+	return &ResponseUser{
+		Username:       u.Username,
+		UserEmail:      u.UserEmail,
+		WalletAddress:  u.WalletAddress,
+		Role:           u.Role,
+		CreatedAt:      u.CreatedAt,
+		ReferralCode:   u.ReferralCode,
+		Referrer:       u.Referrer,
+		Credits:        u.Credits,
+		FromKolRefCode: u.FromKolRefCode,
+	}
+}
+
 type Location struct {
 	ID          int64     `db:"id" json:"id"`
 	Ip          string    `db:"ip" json:"ip"`

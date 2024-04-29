@@ -77,6 +77,7 @@ type Mission struct {
 	StartTime time.Time `db:"start_time" json:"start_time"`
 	EndTime   time.Time `db:"end_time" json:"end_time"`
 	Type      int32     `db:"type" json:"type"`
+	SortID    int32     `db:"sort_id" json:"sort_id"`
 	ParentID  int64     `db:"parent_id" json:"parent_id"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
@@ -113,6 +114,7 @@ type SubMission struct {
 	StartTime time.Time `db:"start_time" json:"start_time"`
 	EndTime   time.Time `db:"end_time" json:"end_time"`
 	Type      int32     `db:"type" json:"type"`
+	SortID    int32     `db:"sort_id" json:"sort_id"`
 	ParentID  int64     `db:"parent_id" json:"parent_id"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
@@ -147,6 +149,17 @@ type User struct {
 	Referrer        string    `db:"referrer" json:"referrer"`
 	ReferrerUserID  string    `db:"referrer_user_id" json:"referrer_user_id"`
 	Credits         int64     `db:"credits" json:"credits"`
+	FromKolRefCode  string    `db:"from_kol_ref_code" json:"from_kol_ref_code"`
+	FromKolUserID   string    `db:"from_kol_user_id" json:"from_kol_user_id"`
+}
+
+type UserKolRef struct {
+	ID              int64     `db:"id" json:"id"`
+	Username        string    `db:"username" json:"username"`
+	KolReferralCode string    `db:"kol_referral_code" json:"kol_referral_code"`
+	KolUserID       int64     `db:"kol_user_id" json:"kol_user_id"`
+	CreatedAt       time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt       time.Time `db:"updated_at" json:"updated_at"`
 }
 
 type UserMission struct {

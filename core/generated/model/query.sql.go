@@ -10,7 +10,7 @@ import (
 )
 
 const getDeviceInfo = `-- name: GetDeviceInfo :one
-SELECT id, uuid, avatar, username, pass_hash, user_email, wallet_address, role, allocate_storage, created_at, updated_at, deleted_at, project_id, referral_code, referrer, referrer_user_id, credits FROM ` + "`" + `users` + "`" + ` WHERE username = ? LIMIT 1
+SELECT id, uuid, avatar, username, pass_hash, user_email, wallet_address, role, allocate_storage, created_at, updated_at, deleted_at, project_id, referral_code, referrer, referrer_user_id, credits, from_kol_ref_code, from_kol_user_id FROM ` + "`" + `users` + "`" + ` WHERE username = ? LIMIT 1
 `
 
 func (q *Queries) GetDeviceInfo(ctx context.Context, db DBTX, username string) (User, error) {
@@ -34,6 +34,8 @@ func (q *Queries) GetDeviceInfo(ctx context.Context, db DBTX, username string) (
 		&i.Referrer,
 		&i.ReferrerUserID,
 		&i.Credits,
+		&i.FromKolRefCode,
+		&i.FromKolUserID,
 	)
 	return i, err
 }

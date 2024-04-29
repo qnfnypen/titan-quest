@@ -19,6 +19,8 @@ CREATE TABLE `users` (
 `referrer` varchar(64) NOT NULL DEFAULT '',
 `referrer_user_id` varchar(64) NOT NULL DEFAULT '',
 `credits` bigint(20) NOT NULL DEFAULT 0,
+`from_kol_ref_code` varchar(64) NOT NULL DEFAULT '',
+`from_kol_user_id` varchar(64) NOT NULL DEFAULT '',
 PRIMARY KEY (`id`),
 UNIQUE KEY `uniq_username` (`username`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=2058 DEFAULT CHARSET=utf8mb4;
@@ -119,6 +121,7 @@ CREATE TABLE `mission` (
 `start_time` datetime NOT NULL DEFAULT 0,
 `end_time` datetime NOT NULL DEFAULT 0,
 `type` int(4) NOT NULL DEFAULT 0,
+`sort_id` int(4) NOT NULL DEFAULT 0,
 `parent_id` bigint(20) NOT NULL DEFAULT 0,
 `created_at` datetime NOT NULL DEFAULT 0,
 `updated_at` datetime NOT NULL DEFAULT 0,
