@@ -62,6 +62,8 @@ func ServerAPI(cfg *config.Config) {
 	apiV1.GET("/google/callback", GoogleCallBackHandler)
 	apiV1.GET("/telegram/callback", TelegramCallback)
 
+	apiV1.GET("/kol_referral_list", GetUserCreditsHandler)
+
 	user := apiV1.Group("/user")
 	user.GET("/login_before", GetNonceStringHandler)
 	user.POST("/login", authMiddleware.LoginHandler)

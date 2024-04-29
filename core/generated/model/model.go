@@ -56,3 +56,11 @@ type Location struct {
 	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
 	CountryCode string    `db:"-" json:"country_code"`
 }
+
+type UserCredit struct {
+	Username              string  `json:"username" db:"username"`
+	Credits               float64 `json:"credits" db:"credits"`
+	CompletedMissionCount int     `json:"completed_mission_count" db:"completed_mission_count"`
+	FromKOLRefCode        string  `json:"from_kol_ref_code" db:"from_kol_ref_code"`
+	CreatedAt             string  `json:"created_at" db:"created_at"`
+}

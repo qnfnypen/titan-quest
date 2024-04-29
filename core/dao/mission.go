@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"github.com/gnasnik/titan-quest/core/generated/model"
+	"github.com/jmoiron/sqlx"
 )
 
 func AddTwitterOAuth(ctx context.Context, oauth *model.TwitterOauth) error {
@@ -215,21 +216,55 @@ func GetUserTwitterLink(ctx context.Context, username string, missionId int64, s
 	return &out, nil
 }
 
-//func AddUserKOLRef(ctx context.Context, ref *model.UserKolRef) error {
-//	query := `insert into user_kol_ref(username, kol_referral_code, kol_user_id, created_at) values(:username, :kol_referral_code, :kol_user_id, :created_at)`
-//
-//	_, err := DB.NamedExecContext(ctx, query, ref)
-//	return err
-//}
-//
-//func GetUserKOLRef(ctx context.Context, username string) (*model.UserKolRef, error) {
-//	query := `select * from user_kol_ref where username = ?`
-//
-//	var out model.UserKolRef
-//	err := DB.GetContext(ctx, &out, query, username)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	return &out, nil
-//}
+func GetKOLCommissionCredits(ctx context.Context, kolUserId string) (float64, error) {
+	var total float64
+
+	countQuery := `select ifnull(sum(m.credit),0) * 0.2 from users u left join user_mission m on u.username = m.username where from_kol_user_id = ?  group by u.username;`
+	countQueryIn, countQueryParams, err := sqlx.In(countQuery, kolUserId)
+	if err != nil {
+		return 0, err
+	}
+
+	err = DB.GetContext(ctx, &total, countQueryIn, countQueryParams...)
+	if err != nil {
+		return 0, err
+	}
+
+	return total, nil
+}
+
+func GetUserCreditsByKOLReferralCode(ctx context.Context, kolUserId string, option QueryOption) (int64, []*model.UserCredit, error) {
+	limit := option.PageSize
+	offset := option.Page
+	if option.PageSize <= 0 {
+		limit = 50
+	}
+	if option.Page > 0 {
+		offset = limit * (option.Page - 1)
+	}
+
+	var total int64
+
+	countQuery := `select count(1) from ( select u.username from users u left join user_mission m on u.username = m.username where from_kol_user_id = ?  group by u.username) d`
+	countQueryIn, countQueryParams, err := sqlx.In(countQuery, kolUserId)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	err = DB.GetContext(ctx, &total, countQueryIn, countQueryParams...)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	query := `select * from (
+		select u.username, u.from_kol_ref_code , IFNULL(sum(m.credit),0) as credits, count(1) as completed_mission_count, u.created_at from users u left join user_mission m on u.username = m.username where from_kol_user_id = ?  group by u.username
+	) d order by created_at desc LIMIT ? OFFSET ?;`
+
+	var out []*model.UserCredit
+	err = DB.SelectContext(ctx, &out, query, kolUserId, limit, offset)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return total, out, nil
+}

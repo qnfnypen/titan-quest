@@ -596,6 +596,33 @@ func GetUToolKeyByRoundRobin() string {
 	return keys[globalCounter%len(keys)]
 }
 
+func completeConnectWalletMission(ctx context.Context, address string) error {
+	mission, err := dao.GetMissionById(ctx, MissionIdConnectWallet)
+	if err != nil {
+		log.Errorf("GetMissionById: %v", err)
+		return err
+	}
+
+	ums, err := dao.GetUserMissionByMissionId(ctx, address, mission.ID, dao.QueryOption{})
+	if err != nil {
+		log.Errorf("GetUserMissionByMissionId: %v", err)
+		return err
+	}
+
+	if len(ums) == 0 {
+		return dao.AddUserMission(ctx, &model.UserMission{
+			Username:  address,
+			MissionID: mission.ID,
+			Type:      mission.Type,
+			Credit:    mission.Credit,
+			Content:   address,
+			CreatedAt: time.Now(),
+		})
+	}
+
+	return nil
+}
+
 func checkFollowTwitter(ctx context.Context, mission *model.Mission, username string, queryOpt dao.QueryOption) error {
 	twitterUser, err := dao.GetTwitterOauthByUsername(ctx, username)
 	if err != nil {
@@ -1365,4 +1392,43 @@ func GetKOLUserId(ctx context.Context, code string) (string, error) {
 	userId := v.Get("data").GetStringBytes("kol_user_id")
 
 	return string(userId), nil
+}
+
+func GetUserCreditsHandler(c *gin.Context) {
+	userId := c.Query("user_id")
+	if userId == "" {
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InvalidParams, c))
+		return
+	}
+
+	pageSize, _ := strconv.Atoi(c.Query("page_size"))
+	page, _ := strconv.Atoi(c.Query("page"))
+	order := c.Query("order")
+	orderField := c.Query("order_field")
+	option := dao.QueryOption{
+		Page:       page,
+		PageSize:   pageSize,
+		Order:      order,
+		OrderField: orderField,
+	}
+
+	total, referralList, err := dao.GetUserCreditsByKOLReferralCode(c.Request.Context(), userId, option)
+	if err != nil {
+		log.Errorf("GetUserCreditsByKOLReferralCode: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
+		return
+	}
+
+	commission, err := dao.GetKOLCommissionCredits(c.Request.Context(), userId)
+	if err != nil {
+		log.Errorf("GetKOLCommissionCredits: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
+		return
+	}
+
+	c.JSON(http.StatusOK, respJSON(JsonObject{
+		"kol_commission_credits": commission,
+		"list":                   referralList,
+		"total":                  total,
+	}))
 }
