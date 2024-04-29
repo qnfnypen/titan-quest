@@ -1420,7 +1420,7 @@ func GetUserCreditsHandler(c *gin.Context) {
 	}
 
 	commission, err := dao.GetKOLCommissionCredits(c.Request.Context(), userId)
-	if err != nil {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Errorf("GetKOLCommissionCredits: %v", err)
 		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
 		return
