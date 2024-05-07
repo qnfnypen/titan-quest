@@ -1,3 +1,7 @@
+CREATE DATABASE IF NOT EXISTS `titan_quest` DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
+
+USE `titan_quest`;
+
 -- ----------------------------
 -- Table structure for users
 -- ----------------------------
@@ -23,7 +27,7 @@ CREATE TABLE `users` (
 `from_kol_user_id` varchar(64) NOT NULL DEFAULT '',
 PRIMARY KEY (`id`),
 UNIQUE KEY `uniq_username` (`username`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=2058 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 CREATE TABLE `login_log`  (
@@ -82,7 +86,7 @@ CREATE TABLE `location_cn` (
 `updated_at` datetime NOT NULL DEFAULT 0,
 PRIMARY KEY (`id`),
 UNIQUE KEY `uniq_uuid` (`ip`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=42497 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------
 -- Table structure for location_en
@@ -105,7 +109,7 @@ CREATE TABLE `location_en` (
 `updated_at` datetime NOT NULL DEFAULT 0,
 PRIMARY KEY (`id`),
 UNIQUE KEY `uniq_uuid` (`ip`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=42492 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -126,7 +130,7 @@ CREATE TABLE `mission` (
 `created_at` datetime NOT NULL DEFAULT 0,
 `updated_at` datetime NOT NULL DEFAULT 0,
 PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1000 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 create table sub_mission like mission;
@@ -143,7 +147,7 @@ CREATE TABLE `user_mission` (
 `created_at` datetime NOT NULL DEFAULT 0,
 `updated_at` datetime NOT NULL DEFAULT 0,
 PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1000 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -157,7 +161,7 @@ CREATE TABLE `twitter_oauth` (
 `created_at` datetime NOT NULL DEFAULT 0,
 `updated_at` datetime NOT NULL DEFAULT 0,
 PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1000 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 CREATE TABLE `discord_oauth` (
@@ -170,7 +174,7 @@ CREATE TABLE `discord_oauth` (
 `created_at` datetime NOT NULL DEFAULT 0,
 `updated_at` datetime NOT NULL DEFAULT 0,
 PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1000 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 CREATE TABLE `user_twitter_link` (
@@ -181,4 +185,4 @@ CREATE TABLE `user_twitter_link` (
  `created_at` datetime NOT NULL DEFAULT 0,
  `updated_at` datetime NOT NULL DEFAULT 0,
  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1000 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

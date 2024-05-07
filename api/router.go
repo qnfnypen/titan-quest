@@ -2,12 +2,13 @@ package api
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gnasnik/titan-quest/config"
 	"github.com/gnasnik/titan-quest/core/bot/discord"
 	logging "github.com/ipfs/go-log/v2"
 	tele "gopkg.in/telebot.v3"
-	"time"
 )
 
 var (
@@ -61,6 +62,7 @@ func ServerAPI(cfg *config.Config) {
 	apiV1.GET("/discord/callback", DiscordCallBackHandler)
 	apiV1.GET("/google/callback", GoogleCallBackHandler)
 	apiV1.GET("/telegram/callback", TelegramCallback)
+	apiV1.POST("/brows_official_website/callback", BrowsOfficialWebsiteCallback)
 
 	apiV1.GET("/kol_referral_list", GetUserCreditsHandler)
 
@@ -86,6 +88,8 @@ func ServerAPI(cfg *config.Config) {
 	quest.GET("/check", CheckQuestHandler)
 	quest.POST("/twitter_link", PostTwitterLinkHandler)
 	quest.POST("/kol_referral_code", BindingKOLReferralCodeHandler)
+	quest.GET("/official_website/brows", BrowsOfficialWebsite)
+	quest.GET("/official_website/verify", VerifyBrowsOfficialWebsite)
 
 	if err := r.Run(cfg.ApiListen); err != nil {
 		log.Fatalf("starting server: %v\n", err)

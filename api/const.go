@@ -10,6 +10,7 @@ const (
 	MissionIdBindingKOL
 	MissionIdVisitOfficialWebsite
 	MissionIdVisitReferrerPage
+	MissionIdBrowsOfficialWebSite
 )
 
 const (

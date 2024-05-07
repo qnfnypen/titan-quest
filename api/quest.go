@@ -10,6 +10,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/antihax/optional"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/bwmarrin/discordgo"
@@ -18,6 +25,7 @@ import (
 	"github.com/gnasnik/titan-quest/core/dao"
 	errorsx "github.com/gnasnik/titan-quest/core/errors"
 	"github.com/gnasnik/titan-quest/core/generated/model"
+	"github.com/gnasnik/titan-quest/core/opcrypt"
 	swagger "github.com/gnasnik/titan-quest/go-client-generated"
 	"github.com/gnasnik/titan-quest/pkg/random"
 	"github.com/golang-module/carbon/v2"
@@ -25,12 +33,6 @@ import (
 	"github.com/valyala/fastjson"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"io"
-	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func TwitterOAuthHandler(c *gin.Context) {
@@ -388,6 +390,8 @@ func QueryMissionHandler(c *gin.Context) {
 			SubMission: subMission,
 		}
 
+		// 处理浏览官网跳转
+
 		switch mission.Type {
 		case MissionTypeBasic:
 			basicMission = append(basicMission, mi)
@@ -409,6 +413,7 @@ func QueryUserCreditsHandler(c *gin.Context) {
 	claims := jwt.ExtractClaims(c)
 	username := claims[identityKey].(string)
 
+	// 获取已完成的基础任务
 	completeBasicMission, err := dao.GetUserMissionByUser(c.Request.Context(), username, 1, dao.QueryOption{})
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Errorf("GetUserMissionByUser: %v", err)
@@ -432,11 +437,13 @@ func QueryUserCreditsHandler(c *gin.Context) {
 		basicMission = append(basicMission, bs)
 	}
 
+	// 获取已完成的每日任务
 	dailyMission, err := dao.GetUserMissionByUser(c.Request.Context(), username, 2, dao.QueryOption{StartTime: carbon.Now().StartOfDay().String()})
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Errorf("GetUserMissionByUser: %v", err)
 	}
 
+	// 获取已完成的每周任务
 	weeklyMission, err := dao.GetUserMissionByUser(c.Request.Context(), username, 3, dao.QueryOption{StartTime: carbon.Now().StartOfWeek().String()})
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Errorf("GetUserMissionByUser: %v", err)
@@ -1430,5 +1437,96 @@ func GetUserCreditsHandler(c *gin.Context) {
 		"kol_commission_credits": commission,
 		"list":                   referralList,
 		"total":                  total,
+	}))
+}
+
+// BrowsOfficialWebsite 浏览官网
+func BrowsOfficialWebsite(c *gin.Context) {
+	claims := jwt.ExtractClaims(c)
+	username := claims[identityKey].(string)
+
+	tnow := time.Now().Unix()
+	value := fmt.Sprintf("%s:%d", username, tnow)
+	code, err := opcrypt.AesEncryptCBC([]byte(value), []byte(config.Cfg.AesKey))
+	if err != nil {
+		log.Errorf("generate code of brows official website error: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
+		return
+	}
+
+	c.JSON(http.StatusOK, respJSON(JsonObject{
+		"code": code,
+		"uri":  config.Cfg.OfficialWebsiteURI,
+	}))
+}
+
+// BrowsOfficialWebsiteCallback 浏览官网回调
+func BrowsOfficialWebsiteCallback(c *gin.Context) {
+	var params = struct {
+		Code string `json:"code"`
+	}{}
+
+	if err := c.BindJSON(&params); err != nil {
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InvalidParams, c))
+		return
+	}
+
+	code := strings.TrimSpace(params.Code)
+
+	if code == "" {
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InvalidParams, c))
+		return
+	}
+
+	tnow := time.Now().Unix()
+
+	value, err := opcrypt.AesDecryptCBC(code, []byte(config.Cfg.AesKey))
+	if err != nil {
+		log.Errorf("get code of brows official website error: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
+		return
+	}
+
+	values := strings.Split(string(value), ":")
+	if len(values) < 2 {
+		log.Errorf("split code of brows official website error: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
+		return
+	}
+	username := values[0]
+	pnow, _ := strconv.ParseInt(values[1], 10, 64)
+	if pnow == 0 {
+		log.Errorf("time of code error: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
+		return
+	}
+
+	// 如果浏览官网到达了规定时间，则发放积分奖励
+	if tnow-pnow >= config.Cfg.BrowsOfficialWebsiteTime {
+		err = completeMission(c.Request.Context(), username, MissionIdBrowsOfficialWebSite)
+		if err != nil {
+			log.Errorf("complete brows official website error: %v", err)
+			c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, respJSON(nil))
+}
+
+// VerifyBrowsOfficialWebsite 验证浏览官网是否完成
+func VerifyBrowsOfficialWebsite(c *gin.Context) {
+	claims := jwt.ExtractClaims(c)
+	username := claims[identityKey].(string)
+
+	complete, err := getMission(c.Request.Context(), username, MissionIdBrowsOfficialWebSite)
+	if err != nil {
+		log.Errorf("get user mission error: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
+		return
+	}
+
+	c.JSON(http.StatusOK, respJSON(JsonObject{
+		"verified": complete,
 	}))
 }
