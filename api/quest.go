@@ -1516,8 +1516,11 @@ func BrowsOfficialWebsiteCallback(c *gin.Context) {
 
 // VerifyBrowsOfficialWebsite 验证浏览官网是否完成
 func VerifyBrowsOfficialWebsite(c *gin.Context) {
+	var msg string
+
 	claims := jwt.ExtractClaims(c)
 	username := claims[identityKey].(string)
+	lang := c.GetHeader("Lang")
 
 	complete, err := getMission(c.Request.Context(), username, MissionIdBrowsOfficialWebSite)
 	if err != nil {
@@ -1526,7 +1529,19 @@ func VerifyBrowsOfficialWebsite(c *gin.Context) {
 		return
 	}
 
+	switch strings.ToLower(lang) {
+	case "cn":
+		if !complete {
+			msg = "请先完成任务"
+		}
+	case "en":
+		if !complete {
+			msg = "Please complete the task first"
+		}
+	}
+
 	c.JSON(http.StatusOK, respJSON(JsonObject{
 		"verified": complete,
+		"msg":      msg,
 	}))
 }
