@@ -2,6 +2,13 @@ package dao
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/Masterminds/squirrel"
+	"github.com/gnasnik/titan-quest/config"
 	"github.com/gnasnik/titan-quest/core/generated/model"
 	"github.com/jmoiron/sqlx"
 )
@@ -267,4 +274,64 @@ func GetUserCreditsByKOLReferralCode(ctx context.Context, kolUserId string, opti
 	}
 
 	return total, out, nil
+}
+
+// AddUserMissionAndInviteLog 增加用户任务完成并且增加邀请的积分记录
+func AddUserMissionAndInviteLog(ctx context.Context, um *model.UserMission) error {
+	query, args, err := squirrel.Insert(um.TableName()).Columns("username, mission_id, sub_mission_id, type, credit, content, created_at").
+		Values(um.Username, um.MissionID, um.SubMissionID, um.Type, um.Credit, um.Content, um.CreatedAt).ToSql()
+	if err != nil {
+		return fmt.Errorf("generate insert user_mission sql error:%w", err)
+	}
+	_, err = DB.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+
+	// 查询该用户是否被邀请，有错误不返回
+	userExt, err := GetUserExt(ctx, um.Username)
+	switch err {
+	case sql.ErrNoRows:
+	case nil:
+		// 存在的话则增加记录
+		if strings.TrimSpace(userExt.InvitedCode) != "" {
+			addInviteLog(ctx, userExt, um)
+		}
+	}
+
+	return nil
+}
+
+func addInviteLog(ctx context.Context, ue *model.UsersExt, um *model.UserMission) error {
+	// 根据邀请人的邀请码获取邀请人信息
+	ui, err := GetUserExtByInviteCode(ctx, ue.InvitedCode)
+	if err != nil {
+		return err
+	}
+
+	// 增加记录
+	credit := um.Credit * config.Cfg.InviteShareRate / 100
+	err = CreateInviteLog(ctx, &model.InviteLog{
+		Username:    ui.Username,
+		InvitedName: ue.Username,
+		MissionID:   um.MissionID,
+		Credit:      credit,
+		CreatedAt:   time.Now(),
+	})
+
+	return err
+}
+
+// SumInviteCredits 统计邀请积分的总和
+func SumInviteCredits(ctx context.Context, username string) (int64, error) {
+	var sum int64
+	iv := model.InviteLog{}
+
+	query, args, err := squirrel.Select("ifnull(sum(credit),0)").From(iv.TableName()).Where("username = ?", username).ToSql()
+	if err != nil {
+		return 0, fmt.Errorf("generate select sum of credits error:%w", err)
+	}
+
+	err = DB.SelectContext(ctx, &sum, query, args...)
+	return sum, err
 }

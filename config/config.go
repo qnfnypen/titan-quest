@@ -26,6 +26,7 @@ type Config struct {
 	BrowsOfficialWebsiteTime int64  // 浏览官网的时间
 	OfficialWebsiteURI       string // 官网地址
 	AesKey                   string
+	InviteShareRate          int64 // 邀请比例分成
 
 	TitanAPI TitanAPIConfig
 }

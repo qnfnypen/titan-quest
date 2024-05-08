@@ -1,8 +1,14 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -11,10 +17,7 @@ import (
 	"github.com/gnasnik/titan-quest/core/errors"
 	"github.com/gnasnik/titan-quest/core/generated/model"
 	"github.com/gnasnik/titan-quest/pkg/random"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
+	"github.com/rs/xid"
 )
 
 const (
@@ -28,6 +31,7 @@ type login struct {
 	VerifyCode string `form:"verify_code" json:"verify_code"`
 	Sign       string `form:"sign" json:"sign"`
 	Address    string `form:"address" json:"address"`
+	Code       string `form:"code" json:"code"` // 邀请码
 }
 
 type loginResponse struct {
@@ -89,9 +93,9 @@ func jwtGinMiddleware(secretKey string) (*jwt.GinJWTMiddleware, error) {
 			)
 
 			if loginParams.Sign != "" {
-				user, err = loginBySignature(c, loginParams.Address, loginParams.Sign)
+				user, err = loginBySignature(c, loginParams.Address, loginParams.Sign, loginParams.Code)
 			} else if loginParams.VerifyCode != "" {
-				user, err = loginByVerifyCode(c, loginParams.Username, loginParams.VerifyCode)
+				user, err = loginByVerifyCode(c, loginParams.Username, loginParams.VerifyCode, loginParams.Code)
 			} else {
 				return nil, errors.New("invalid login params")
 			}
@@ -139,7 +143,7 @@ func jwtGinMiddleware(secretKey string) (*jwt.GinJWTMiddleware, error) {
 	})
 }
 
-func loginBySignature(c *gin.Context, address, msg string) (interface{}, error) {
+func loginBySignature(c *gin.Context, address, msg, inviteCode string) (interface{}, error) {
 	nonce, err := getNonceFromCache(c.Request.Context(), address, NonceStringTypeSignature)
 	if err != nil {
 		return nil, errors.NewErrorCode(errors.InvalidParams, c)
@@ -151,10 +155,14 @@ func loginBySignature(c *gin.Context, address, msg string) (interface{}, error) 
 	if strings.ToUpper(recoverAddress) != strings.ToUpper(address) {
 		return nil, errors.NewErrorCode(errors.PassWordNotAllowed, c)
 	}
+	err = AddUserInfo(c.Request.Context(), address, inviteCode)
+	if err != nil {
+		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+	}
 	return &model.User{Username: address, Role: 0}, nil
 }
 
-func loginByVerifyCode(c *gin.Context, username, inputCode string) (interface{}, error) {
+func loginByVerifyCode(c *gin.Context, username, inputCode, inviteCode string) (interface{}, error) {
 	code, err := getNonceFromCache(c.Request.Context(), username, NonceStringTypeLogin)
 	if err != nil {
 		log.Errorf("get user by verify code: %v", err)
@@ -169,18 +177,22 @@ func loginByVerifyCode(c *gin.Context, username, inputCode string) (interface{},
 	//	return nil, errors.NewErrorCode(errors.InvalidVerifyCode, c)
 	//}
 
-	_, err = dao.GetUserByUsername(c.Request.Context(), username)
-	if err == sql.ErrNoRows {
-		user := &model.User{
-			Username:     username,
-			CreatedAt:    time.Now(),
-			UpdatedAt:    time.Now(),
-			ReferralCode: random.GenerateRandomString(6),
-		}
-		err = dao.CreateUser(c.Request.Context(), user)
-		if err != nil {
-			c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
-		}
+	// _, err = dao.GetUserByUsername(c.Request.Context(), username)
+	// if err == sql.ErrNoRows {
+	// 	user := &model.User{
+	// 		Username:     username,
+	// 		CreatedAt:    time.Now(),
+	// 		UpdatedAt:    time.Now(),
+	// 		ReferralCode: random.GenerateRandomString(6),
+	// 	}
+	// 	err = dao.CreateUser(c.Request.Context(), user)
+	// 	if err != nil {
+	// 		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+	// 	}
+	// }
+	err = AddUserInfo(c.Request.Context(), username, inviteCode)
+	if err != nil {
+		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
 	}
 
 	return &model.User{Username: username, Role: 0}, nil
@@ -206,4 +218,48 @@ func VerifyMessage(message string, signedMessage string) (string, error) {
 	}
 
 	return crypto.PubkeyToAddress(*sigPublicKeyECDSA).String(), nil
+}
+
+// AddUserInfo 新增用户信息
+func AddUserInfo(ctx context.Context, username, code string) error {
+	userExt := &model.UsersExt{
+		Username:    username,
+		InviteCode:  xid.New().String(),
+		InvitedCode: code,
+	}
+
+	// 判断用户是否存在，不存在则增加
+	_, err := dao.GetUserByUsername(ctx, username)
+	switch err {
+	case sql.ErrNoRows:
+		user := &model.User{
+			Username:     username,
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
+			ReferralCode: random.GenerateRandomString(6),
+		}
+
+		err = dao.CreateUserInfo(ctx, user, userExt)
+		if err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return err
+	}
+
+	// 判断用户附属表是否存在
+	_, err = dao.GetUserExt(ctx, username)
+	switch err {
+	case sql.ErrNoRows:
+		err = dao.CreateUserExt(ctx, userExt)
+		if err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return err
+	}
+
+	return nil
 }

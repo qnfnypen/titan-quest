@@ -22,7 +22,7 @@ func completeMission(ctx context.Context, username string, missionID int64) erro
 	}
 
 	if len(ums) == 0 {
-		return dao.AddUserMission(ctx, &model.UserMission{
+		return dao.AddUserMissionAndInviteLog(ctx, &model.UserMission{
 			Username:  username,
 			MissionID: mission.ID,
 			Type:      mission.Type,

@@ -453,6 +453,10 @@ func QueryUserCreditsHandler(c *gin.Context) {
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Errorf("SumUserCredits: %v", err)
 	}
+	icredits, err := dao.SumInviteCredits(c.Request.Context(), username)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		log.Errorf("SumUserCredits: %v", err)
+	}
 
 	var (
 		twitterUserId string
@@ -470,7 +474,7 @@ func QueryUserCreditsHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, respJSON(JsonObject{
 		"address":         username,
-		"credits":         credits,
+		"credits":         credits + icredits,
 		"today_credits":   0,
 		"week_credits":    0,
 		"twitter_user_id": twitterUserId,
@@ -617,7 +621,7 @@ func completeConnectWalletMission(ctx context.Context, address string) error {
 	}
 
 	if len(ums) == 0 {
-		return dao.AddUserMission(ctx, &model.UserMission{
+		return dao.AddUserMissionAndInviteLog(ctx, &model.UserMission{
 			Username:  address,
 			MissionID: mission.ID,
 			Type:      mission.Type,
@@ -625,6 +629,14 @@ func completeConnectWalletMission(ctx context.Context, address string) error {
 			Content:   address,
 			CreatedAt: time.Now(),
 		})
+		// return dao.AddUserMission(ctx, &model.UserMission{
+		// 	Username:  address,
+		// 	MissionID: mission.ID,
+		// 	Type:      mission.Type,
+		// 	Credit:    mission.Credit,
+		// 	Content:   address,
+		// 	CreatedAt: time.Now(),
+		// })
 	}
 
 	return nil
@@ -695,7 +707,7 @@ func checkFollowTwitter(ctx context.Context, mission *model.Mission, username st
 	}
 
 	if len(ums) == 0 {
-		err = dao.AddUserMission(ctx, &model.UserMission{
+		err = dao.AddUserMissionAndInviteLog(ctx, &model.UserMission{
 			Username:  username,
 			MissionID: mission.ID,
 			Type:      mission.Type,
@@ -703,6 +715,14 @@ func checkFollowTwitter(ctx context.Context, mission *model.Mission, username st
 			Content:   twitterUser.TwitterUserID,
 			CreatedAt: time.Now(),
 		})
+		// err = dao.AddUserMission(ctx, &model.UserMission{
+		// 	Username:  username,
+		// 	MissionID: mission.ID,
+		// 	Type:      mission.Type,
+		// 	Credit:    mission.Credit,
+		// 	Content:   twitterUser.TwitterUserID,
+		// 	CreatedAt: time.Now(),
+		// })
 
 		if err != nil {
 			log.Errorf("AddUserMission: %v", err)
@@ -774,7 +794,7 @@ func checkLikeTweet(ctx context.Context, mission *model.Mission, username string
 	}
 
 	if len(ums) == 0 {
-		err = dao.AddUserMission(ctx, &model.UserMission{
+		err = dao.AddUserMissionAndInviteLog(ctx, &model.UserMission{
 			Username:  username,
 			MissionID: mission.ID,
 			Type:      mission.Type,
@@ -782,6 +802,14 @@ func checkLikeTweet(ctx context.Context, mission *model.Mission, username string
 			Content:   mission.OpenUrl,
 			CreatedAt: time.Now(),
 		})
+		// err = dao.AddUserMission(ctx, &model.UserMission{
+		// 	Username:  username,
+		// 	MissionID: mission.ID,
+		// 	Type:      mission.Type,
+		// 	Credit:    mission.Credit,
+		// 	Content:   mission.OpenUrl,
+		// 	CreatedAt: time.Now(),
+		// })
 
 		if err != nil {
 			log.Errorf("AddUserMission: %v", err)
@@ -853,7 +881,7 @@ func checkReTweet(ctx context.Context, mission *model.Mission, username string, 
 	}
 
 	if len(ums) == 0 {
-		err = dao.AddUserMission(ctx, &model.UserMission{
+		err = dao.AddUserMissionAndInviteLog(ctx, &model.UserMission{
 			Username:  username,
 			MissionID: mission.ID,
 			Type:      mission.Type,
@@ -963,7 +991,7 @@ func checkQuoteTweet(ctx context.Context, mission *model.Mission, username strin
 	}
 
 	if len(ums) == 0 {
-		err = dao.AddUserMission(ctx, &model.UserMission{
+		err = dao.AddUserMissionAndInviteLog(ctx, &model.UserMission{
 			Username:  username,
 			MissionID: mission.ID,
 			Type:      mission.Type,
@@ -1064,7 +1092,7 @@ func checkPostTweet(ctx context.Context, mission *model.Mission, username string
 	}
 
 	if len(ums) == 0 {
-		err = dao.AddUserMission(ctx, &model.UserMission{
+		err = dao.AddUserMissionAndInviteLog(ctx, &model.UserMission{
 			Username:  username,
 			MissionID: mission.ID,
 			Type:      mission.Type,
@@ -1147,7 +1175,7 @@ func checkJoinDiscord(ctx context.Context, mission *model.Mission, username stri
 	}
 
 	if len(ums) == 0 {
-		err = dao.AddUserMission(ctx, &model.UserMission{
+		err = dao.AddUserMissionAndInviteLog(ctx, &model.UserMission{
 			Username:  username,
 			MissionID: mission.ID,
 			Type:      mission.Type,
@@ -1182,7 +1210,7 @@ func checkBindingKOL(ctx context.Context, mission *model.Mission, username strin
 	}
 
 	if len(ums) == 0 {
-		err = dao.AddUserMission(ctx, &model.UserMission{
+		err = dao.AddUserMissionAndInviteLog(ctx, &model.UserMission{
 			Username:  username,
 			MissionID: mission.ID,
 			Type:      mission.Type,
@@ -1267,7 +1295,7 @@ func checkInviteFriendsToDiscord(ctx context.Context, mission *model.Mission, us
 		}
 
 		completedCount++
-		err = dao.AddUserMission(ctx, &model.UserMission{
+		err = dao.AddUserMissionAndInviteLog(ctx, &model.UserMission{
 			Username:     username,
 			MissionID:    mission.ID,
 			SubMissionID: sm.ID,
@@ -1535,6 +1563,10 @@ func VerifyBrowsOfficialWebsite(c *gin.Context) {
 			msg = "请先完成任务"
 		}
 	case "en":
+		if !complete {
+			msg = "Please complete the task first"
+		}
+	default:
 		if !complete {
 			msg = "Please complete the task first"
 		}

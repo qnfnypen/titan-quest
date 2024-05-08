@@ -14,7 +14,7 @@ const (
 type errorCode int
 
 type ResponseUser struct {
-	Username       string    `db:"username" json:"username"`
+	Username       string    `db:"un" json:"username"`
 	UserEmail      string    `db:"user_email" json:"user_email"`
 	WalletAddress  string    `db:"wallet_address" json:"wallet_address"`
 	Role           int32     `db:"role" json:"role"`
@@ -23,6 +23,7 @@ type ResponseUser struct {
 	Referrer       string    `db:"referrer" json:"referrer"`
 	Credits        int64     `db:"credits" json:"credits"`
 	FromKolRefCode string    `db:"from_kol_ref_code" json:"from_kol_ref_code"`
+	InviteCode     string    `db:"invite_code" json:"code"` // 邀请码
 }
 
 func (u *User) ToResponseUser() *ResponseUser {
@@ -63,4 +64,24 @@ type UserCredit struct {
 	CompletedMissionCount int     `json:"completed_mission_count" db:"completed_mission_count"`
 	FromKOLRefCode        string  `json:"from_kol_ref_code" db:"from_kol_ref_code"`
 	CreatedAt             string  `json:"created_at" db:"created_at"`
+}
+
+// TableName 表名映射
+func (InviteLog) TableName() string {
+	return "invite_log"
+}
+
+// TableName 表名映射
+func (UsersExt) TableName() string {
+	return "users_ext"
+}
+
+// TableName 表明映射
+func (User) TableName() string {
+	return "users"
+}
+
+// TableName 表明映射
+func (UserMission) TableName() string {
+	return "user_mission"
 }

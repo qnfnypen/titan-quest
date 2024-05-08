@@ -2,9 +2,12 @@ package api
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/gnasnik/titan-quest/core/dao"
@@ -12,21 +15,25 @@ import (
 	"github.com/gnasnik/titan-quest/core/generated/model"
 	"github.com/gnasnik/titan-quest/pkg/random"
 	"github.com/go-redis/redis/v9"
-	"net/http"
-	"strings"
-	"time"
 )
 
 func GetUserInfoHandler(c *gin.Context) {
 	claims := jwt.ExtractClaims(c)
 	username := claims[identityKey].(string)
-	user, err := dao.GetUserByUsername(c.Request.Context(), username)
+	// user, err := dao.GetUserByUsername(c.Request.Context(), username)
+	// if err != nil {
+	// 	c.JSON(http.StatusOK, respError(errors.ErrNotFound))
+	// 	return
+	// }
+
+	resp, err := dao.GetUserResponse(c.Request.Context(), username)
 	if err != nil {
 		c.JSON(http.StatusOK, respError(errors.ErrNotFound))
 		return
 	}
 
-	c.JSON(http.StatusOK, respJSON(user.ToResponseUser()))
+	// c.JSON(http.StatusOK, respJSON(user.ToResponseUser()))
+	c.JSON(http.StatusOK, respJSON(resp))
 }
 
 type NonceStringType string
@@ -92,6 +99,8 @@ func getNonceFromCache(ctx context.Context, username string, t NonceStringType) 
 
 func GetNonceStringHandler(c *gin.Context) {
 	username := c.Query("username")
+	// 获取邀请码
+	// code := strings.TrimSpace(c.Query("code"))
 	if username == "" {
 		c.JSON(http.StatusOK, respErrorCode(errors.InvalidParams, c))
 		return
@@ -103,27 +112,45 @@ func GetNonceStringHandler(c *gin.Context) {
 		return
 	}
 
-	_, err = dao.GetUserByUsername(c.Request.Context(), username)
-	if err == sql.ErrNoRows {
-		//c.JSON(http.StatusOK, respErrorCode(errors.UserNotFound, c))
-		//return
-		user := &model.User{
-			Username:     username,
-			CreatedAt:    time.Now(),
-			UpdatedAt:    time.Now(),
-			ReferralCode: random.GenerateRandomString(6),
-		}
-		err = dao.CreateUser(c.Request.Context(), user)
-		if err != nil {
-			c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
-			return
-		}
-	}
+	// inviteCode := xid.New().String()
+	// userExt := &model.UsersExt{
+	// 	Username:    username,
+	// 	InviteCode:  inviteCode,
+	// 	InvitedCode: code,
+	// }
 
-	if err != nil {
-		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
-		return
-	}
+	// _, err = dao.GetUserByUsername(c.Request.Context(), username)
+	// if err == sql.ErrNoRows {
+	// 	//c.JSON(http.StatusOK, respErrorCode(errors.UserNotFound, c))
+	// 	//return
+	// 	user := &model.User{
+	// 		Username:     username,
+	// 		CreatedAt:    time.Now(),
+	// 		UpdatedAt:    time.Now(),
+	// 		ReferralCode: random.GenerateRandomString(6),
+	// 	}
+
+	// 	err = dao.CreateUserInfo(c.Request.Context(), user, userExt)
+	// 	if err != nil {
+	// 		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+	// 		return
+	// 	}
+	// }
+
+	// if err != nil {
+	// 	c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+	// 	return
+	// }
+
+	// // 老用户则增加邀请码
+	// _, err = dao.GetUserExt(c.Request.Context(), username)
+	// if err == sql.ErrNoRows {
+	// 	err = dao.CreateUserExt(c.Request.Context(), userExt)
+	// 	if err != nil {
+	// 		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+	// 		return
+	// 	}
+	// }
 
 	c.JSON(http.StatusOK, respJSON(JsonObject{
 		"code": nonce,

@@ -13,7 +13,7 @@ CREATE TABLE `users` (
 `pass_hash` varchar(255) NOT NULL DEFAULT '',
 `user_email` varchar(255) NOT NULL DEFAULT '',
 `wallet_address` varchar(255) NOT NULL DEFAULT '',
-`role` tinyint(4) NOT NULL DEFAULT '0',
+`role` int(4) NOT NULL DEFAULT '0',
 `allocate_storage` int(1) NOT NULL DEFAULT '0',
 `created_at` datetime(3) NOT NULL DEFAULT '0000-00-00 00:00:00.000',
 `updated_at` datetime(3) NOT NULL DEFAULT '0000-00-00 00:00:00.000',
@@ -29,7 +29,6 @@ PRIMARY KEY (`id`),
 UNIQUE KEY `uniq_username` (`username`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
 CREATE TABLE `login_log`  (
 `id` bigint(20) NOT NULL AUTO_INCREMENT,
 `login_username` varchar(50) NOT NULL DEFAULT '',
@@ -37,7 +36,7 @@ CREATE TABLE `login_log`  (
 `login_location` varchar(255) NOT NULL DEFAULT '',
 `browser` varchar(50) NOT NULL DEFAULT '',
 `os` varchar(50) NOT NULL DEFAULT '',
-`status` tinyint(4) NOT NULL DEFAULT 0,
+`status` int(4) NOT NULL DEFAULT 0,
 `msg` varchar(255) NOT NULL DEFAULT '',
 `created_at` datetime(3) NOT NULL DEFAULT 0,
 PRIMARY KEY (`id`) USING BTREE
@@ -186,3 +185,21 @@ CREATE TABLE `user_twitter_link` (
  `updated_at` datetime NOT NULL DEFAULT 0,
  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `users_ext` (
+  `username` varchar(255) NOT NULL DEFAULT '' COMMENT '用户名字',
+  `invite_code` varchar(63) NOT NULL DEFAULT '' COMMENT '邀请码',
+  `invited_code` varchar(63) NOT NULL DEFAULT '' COMMENT '邀请人的邀请码',
+  PRIMARY KEY (`username`),
+  UNIQUE KEY `uniq_invite_code` (`invite_code`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户补充表';
+
+CREATE TABLE IF NOT EXISTS `invite_log` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+  `username` varchar(255) NOT NULL DEFAULT '' COMMENT '邀请人名字',
+  `invited_name` varchar(255) NOT NULL DEFAULT '' COMMENT '被邀请人名字',
+  `mission_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '被邀请人完成的任务',
+  `credit` bigint(20) NOT NULL DEFAULT 0 COMMENT '积分',
+  `created_at` datetime NOT NULL DEFAULT 0 COMMENT '创建时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='邀请明细表';
