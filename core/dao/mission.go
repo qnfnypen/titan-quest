@@ -332,6 +332,6 @@ func SumInviteCredits(ctx context.Context, username string) (int64, error) {
 		return 0, fmt.Errorf("generate select sum of credits error:%w", err)
 	}
 
-	err = DB.SelectContext(ctx, &sum, query, args...)
+	err = DB.QueryRowxContext(ctx, query, args...).Scan(&sum)
 	return sum, err
 }

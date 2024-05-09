@@ -74,7 +74,7 @@ func ServerAPI(cfg *config.Config) {
 	user.GET("/refresh_token", authMiddleware.RefreshHandler)
 
 	user.Use(authMiddleware.MiddlewareFunc())
-	user.POST("/info", GetUserInfoHandler)
+	user.GET("/info", GetUserInfoHandler)
 	user.GET("/twitter/auth", TwitterOAuthHandler)
 	user.GET("/discord/auth", DiscordOAuthHandler)
 	user.GET("/google/auth", GoogleOAuthHandler)

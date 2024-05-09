@@ -94,7 +94,7 @@ func CreateUserExt(ctx context.Context, userExt *model.UsersExt) error {
 		return fmt.Errorf("generate insert user_ext sql error:%w", err)
 	}
 
-	_, err = DB.DB.ExecContext(ctx, query, args)
+	_, err = DB.DB.ExecContext(ctx, query, args...)
 	return err
 }
 
@@ -106,7 +106,7 @@ func CreateInviteLog(ctx context.Context, inviteLog *model.InviteLog) error {
 		return fmt.Errorf("generate insert invite_log sql error:%w", err)
 	}
 
-	_, err = DB.DB.ExecContext(ctx, query, args)
+	_, err = DB.DB.ExecContext(ctx, query, args...)
 	return err
 }
 
@@ -119,7 +119,7 @@ func GetUserExt(ctx context.Context, username string) (*model.UsersExt, error) {
 		return nil, fmt.Errorf("generate query user_ext sql error:%w", err)
 	}
 
-	err = DB.SelectContext(ctx, &userExt, query, args...)
+	err = DB.QueryRowxContext(ctx, query, args...).StructScan(&userExt)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func GetUserExtByInviteCode(ctx context.Context, inviteCode string) (*model.User
 		return nil, fmt.Errorf("generate query user_ext sql error:%w", err)
 	}
 
-	err = DB.SelectContext(ctx, &userExt, query, args...)
+	err = DB.QueryRowxContext(ctx, query, args...).StructScan(&userExt)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func GetUserResponse(ctx context.Context, username string) (*model.ResponseUser,
 		return nil, fmt.Errorf("generate query user_info sql error:%w", err)
 	}
 
-	err = DB.SelectContext(ctx, &response, query, args...)
+	err = DB.QueryRowxContext(ctx, query, args...).StructScan(&response)
 	if err != nil {
 		return nil, err
 	}
