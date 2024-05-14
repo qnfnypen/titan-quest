@@ -54,3 +54,25 @@ func TestCreateUserExt(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestGetMissionLogs(t *testing.T) {
+	list, total, err := GetMissionLogs(context.Background(), "0x30c16b1c6e07b5f685ee668b9e69a28512f74159", QueryOption{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(list)
+	t.Log(total)
+}
+
+func TestGetUserInviteLogs(t *testing.T) {
+	list, total, err := GetUserInviteLogs(context.Background(), "456", QueryOption{Page: 1, PageSize: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, v := range list {
+		t.Log(*v)
+	}
+	t.Log(total)
+}

@@ -90,6 +90,11 @@ func ServerAPI(cfg *config.Config) {
 	quest.POST("/kol_referral_code", BindingKOLReferralCodeHandler)
 	quest.GET("/official_website/brows", BrowsOfficialWebsite)
 	quest.GET("/official_website/verify", VerifyBrowsOfficialWebsite)
+	quest.GET("/become_volunteer", GetBecomeVolunteerURL)
+	quest.GET("/become_volunteer/verify", GetBecomeVolunteerURL)
+
+	quest.GET("/invite/logs", GetInviteLogs)
+	quest.GET("/mission/logs", GetMissionLogs)
 
 	if err := r.Run(cfg.ApiListen); err != nil {
 		log.Fatalf("starting server: %v\n", err)

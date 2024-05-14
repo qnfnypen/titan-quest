@@ -335,3 +335,46 @@ func SumInviteCredits(ctx context.Context, username string) (int64, error) {
 	err = DB.QueryRowxContext(ctx, query, args...).Scan(&sum)
 	return sum, err
 }
+
+// GetMissionLogs 获取任务完成记录
+func GetMissionLogs(ctx context.Context, name string, option QueryOption) ([]*model.MissionLogResp, int64, error) {
+	var (
+		limit, offset int
+		total         int64
+		out           []*model.MissionLogResp
+	)
+
+	um := model.UserMission{}
+
+	if option.PageSize <= 0 {
+		limit = 50
+	} else {
+		limit = option.PageSize
+	}
+	if option.Page > 0 {
+		offset = limit * (option.Page - 1)
+	}
+
+	// 获取总条数
+	query, args, err := squirrel.Select("COUNT(id)").From(um.TableName()).Where("username = ?", name).ToSql()
+	if err != nil {
+		return nil, 0, fmt.Errorf("generate sql error:%w", err)
+	}
+	err = DB.GetContext(ctx, &total, query, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("get total of invite_log error:%w", err)
+	}
+	// 获取详情
+	query, args, err = squirrel.Select("title,title_cn,mission.created_at AS createdAt,user_mission.credit AS ucredit").
+		From(um.TableName()).LeftJoin("mission ON user_mission.mission_id = mission.id").
+		Where("username = ?", name).Limit(uint64(limit)).Offset(uint64(offset)).ToSql()
+	if err != nil {
+		return nil, 0, fmt.Errorf("generate sql error:%w", err)
+	}
+	err = DB.SelectContext(ctx, &out, query, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("get list of invite_log error:%w", err)
+	}
+
+	return out, total, nil
+}

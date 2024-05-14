@@ -200,6 +200,6 @@ CREATE TABLE IF NOT EXISTS `invite_log` (
   `invited_name` varchar(255) NOT NULL DEFAULT '' COMMENT '被邀请人名字',
   `mission_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '被邀请人完成的任务',
   `credit` bigint(20) NOT NULL DEFAULT 0 COMMENT '积分',
-  `created_at` datetime NOT NULL DEFAULT 0 COMMENT '创建时间',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='邀请明细表';

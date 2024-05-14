@@ -1562,14 +1562,110 @@ func VerifyBrowsOfficialWebsite(c *gin.Context) {
 		if !complete {
 			msg = "请先完成任务"
 		}
-	case "en":
+	default:
 		if !complete {
 			msg = "Please complete the task first"
+		}
+	}
+
+	c.JSON(http.StatusOK, respJSON(JsonObject{
+		"verified": complete,
+		"msg":      msg,
+	}))
+}
+
+// GetInviteLogs 获取邀请记录
+func GetInviteLogs(c *gin.Context) {
+	claims := jwt.ExtractClaims(c)
+	username := claims[identityKey].(string)
+
+	page, _ := c.GetQuery("page")
+	size, _ := c.GetQuery("size")
+	pageInt, _ := strconv.Atoi(page)
+	sizeInt, _ := strconv.Atoi(size)
+
+	out, total, err := dao.GetUserInviteLogs(c.Request.Context(), username, dao.QueryOption{Page: pageInt, PageSize: sizeInt})
+	if err != nil {
+		log.Errorf("get user invite_log error: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
+		return
+	}
+
+	c.JSON(http.StatusOK, respJSON(JsonObject{
+		"total": total,
+		"list":  out,
+	}))
+}
+
+// GetMissionLogs 获取任务完成记录
+func GetMissionLogs(c *gin.Context) {
+	claims := jwt.ExtractClaims(c)
+	username := claims[identityKey].(string)
+
+	page, _ := c.GetQuery("page")
+	size, _ := c.GetQuery("size")
+	pageInt, _ := strconv.Atoi(page)
+	sizeInt, _ := strconv.Atoi(size)
+
+	out, total, err := dao.GetMissionLogs(c.Request.Context(), username, dao.QueryOption{Page: pageInt, PageSize: sizeInt})
+	if err != nil {
+		log.Errorf("get user mission_log error: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
+		return
+	}
+
+	c.JSON(http.StatusOK, respJSON(JsonObject{
+		"total": total,
+		"list":  out,
+	}))
+}
+
+// GetBecomeVolunteerURL 获取跳转链接
+func GetBecomeVolunteerURL(c *gin.Context) {
+	var url string
+	lang := c.GetHeader("Lang")
+
+	switch strings.ToLower(lang) {
+	case "cn":
+		url = config.Cfg.GoogleDoc.CnURI
+	default:
+		url = config.Cfg.GoogleDoc.EnURI
+	}
+
+	c.JSON(http.StatusOK, respJSON(JsonObject{
+		"url": url,
+	}))
+}
+
+// VerifyBecomeVolunteer 验证是否完成报表填写
+func VerifyBecomeVolunteer(c *gin.Context) {
+	var (
+		msg      string
+		complete bool
+		err      error
+	)
+
+	claims := jwt.ExtractClaims(c)
+	username := claims[identityKey].(string)
+	lang := c.GetHeader("Lang")
+
+	// 调用谷歌文档接口进行查询
+	switch strings.ToLower(lang) {
+	case "cn":
+		if !complete {
+			msg = "请先完成任务"
 		}
 	default:
 		if !complete {
 			msg = "Please complete the task first"
 		}
+	}
+	// 查询到则添加任务完成记录
+	err = completeMission(c.Request.Context(), username, MissionIdBecomeVolunteer)
+	if err != nil {
+		log.Errorf("get user mission_log error: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
+		return
 	}
 
 	c.JSON(http.StatusOK, respJSON(JsonObject{

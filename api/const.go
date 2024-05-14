@@ -11,6 +11,7 @@ const (
 	MissionIdVisitOfficialWebsite
 	MissionIdVisitReferrerPage
 	MissionIdBrowsOfficialWebSite
+	MissionIdBecomeVolunteer // 成为预备志愿者
 )
 
 const (

@@ -29,6 +29,8 @@ type Config struct {
 	InviteShareRate          int64 // 邀请比例分成
 
 	TitanAPI TitanAPIConfig
+
+	GoogleDoc GoogleDocConfig
 }
 
 type TitanAPIConfig struct {
@@ -43,4 +45,12 @@ type EmailConfig struct {
 	SMTPPort string
 	Username string
 	Password string
+}
+
+// GoogleDocConfig 谷歌文档配置
+type GoogleDocConfig struct {
+	EnDocID string
+	CnDocID string
+	EnURI   string
+	CnURI   string
 }

@@ -26,6 +26,23 @@ type ResponseUser struct {
 	InviteCode     string    `db:"invite_code" json:"code"` // 邀请码
 }
 
+type (
+	// InviteLogResp 邀请记录
+	InviteLogResp struct {
+		InvitedName string    `db:"invited_name" json:"email"`
+		Tasks       int64     `db:"tasks" json:"task_nums"`
+		CreatedAt   time.Time `db:"created_at" json:"created_at"`
+		Credits     int64     `db:"credits" json:"credits"`
+	}
+	// MissionLogResp 任务完成记录
+	MissionLogResp struct {
+		Title     string    `db:"title" json:"title"`
+		TitleCn   string    `db:"title_cn" json:"title_cn"`
+		CreatedAt time.Time `db:"createdAt" json:"created_at"`
+		Credit    int64     `db:"ucredit" json:"credit"`
+	}
+)
+
 func (u *User) ToResponseUser() *ResponseUser {
 	return &ResponseUser{
 		Username:       u.Username,
@@ -84,4 +101,9 @@ func (User) TableName() string {
 // TableName 表明映射
 func (UserMission) TableName() string {
 	return "user_mission"
+}
+
+// TableName 表明映射
+func (Mission) TableName() string {
+	return "mission"
 }
