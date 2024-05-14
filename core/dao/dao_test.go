@@ -76,3 +76,33 @@ func TestGetUserInviteLogs(t *testing.T) {
 	}
 	t.Log(total)
 }
+
+func TestComplete(t *testing.T) {
+	ctx := context.Background()
+	var missionID int64 = 1011
+	username := "1661628099@qq.com"
+	mission, err := GetMissionById(ctx, missionID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ums, err := GetUserMissionByMissionId(ctx, username, mission.ID, QueryOption{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(ums) == 0 {
+		err := AddUserMissionAndInviteLog(ctx, &model.UserMission{
+			Username:  username,
+			MissionID: mission.ID,
+			Type:      mission.Type,
+			Credit:    mission.Credit,
+			Content:   username,
+			CreatedAt: time.Now(),
+		})
+
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -17,6 +18,8 @@ var (
 	ctx      = context.Background()
 	docSrv   *docs.Service
 	sheetSrv *sheets.Service
+	smu      = new(sync.Mutex)
+	dmu      = new(sync.Mutex)
 )
 
 // GetDocsService 新建谷歌文档服务
@@ -24,6 +27,8 @@ func GetDocsService(secretJSON []byte) (*docs.Service, error) {
 	var err error
 
 	if docSrv == nil {
+		dmu.Lock()
+		defer dmu.Unlock()
 		docSrv, err = newDocsService(secretJSON)
 		if err != nil {
 			return nil, err
@@ -38,6 +43,8 @@ func GetSheetService(credJSON, tokenJSON []byte) (*sheets.Service, error) {
 	var err error
 
 	if sheetSrv == nil {
+		smu.Lock()
+		defer smu.Unlock()
 		sheetSrv, err = newSheetServiceByOAuth(credJSON, tokenJSON)
 		if err != nil {
 			return nil, err

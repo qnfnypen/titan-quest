@@ -49,8 +49,10 @@ type EmailConfig struct {
 
 // GoogleDocConfig 谷歌文档配置
 type GoogleDocConfig struct {
-	EnDocID string
-	CnDocID string
-	EnURI   string
-	CnURI   string
+	EnDocID   string
+	CnDocID   string
+	EnURI     string
+	CnURI     string
+	CredPath  string
+	TokenPath string
 }

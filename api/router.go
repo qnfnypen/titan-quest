@@ -91,7 +91,7 @@ func ServerAPI(cfg *config.Config) {
 	quest.GET("/official_website/brows", BrowsOfficialWebsite)
 	quest.GET("/official_website/verify", VerifyBrowsOfficialWebsite)
 	quest.GET("/become_volunteer", GetBecomeVolunteerURL)
-	quest.GET("/become_volunteer/verify", GetBecomeVolunteerURL)
+	quest.GET("/become_volunteer/verify", VerifyBecomeVolunteer)
 
 	quest.GET("/invite/logs", GetInviteLogs)
 	quest.GET("/mission/logs", GetMissionLogs)

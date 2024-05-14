@@ -33,6 +33,8 @@ import (
 	"github.com/valyala/fastjson"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+
+	glog "log"
 )
 
 func TwitterOAuthHandler(c *gin.Context) {
@@ -1640,32 +1642,43 @@ func GetBecomeVolunteerURL(c *gin.Context) {
 // VerifyBecomeVolunteer 验证是否完成报表填写
 func VerifyBecomeVolunteer(c *gin.Context) {
 	var (
-		msg      string
-		complete bool
-		err      error
+		msg, speedID string
+		complete     bool
+		err          error
 	)
 
 	claims := jwt.ExtractClaims(c)
 	username := claims[identityKey].(string)
+	glog.Println(username)
+
 	lang := c.GetHeader("Lang")
 
 	// 调用谷歌文档接口进行查询
 	switch strings.ToLower(lang) {
 	case "cn":
-		if !complete {
-			msg = "请先完成任务"
-		}
+		msg = "请先完成任务"
+		speedID = config.Cfg.GoogleDoc.CnDocID
 	default:
-		if !complete {
-			msg = "Please complete the task first"
-		}
+		msg = "Please complete the task first"
+		speedID = config.Cfg.GoogleDoc.EnDocID
 	}
-	// 查询到则添加任务完成记录
-	err = completeMission(c.Request.Context(), username, MissionIdBecomeVolunteer)
+
+	// 判断是否完成验证
+	complete, err = checkBVComplete(username, speedID)
 	if err != nil {
-		log.Errorf("get user mission_log error: %v", err)
+		log.Errorf("check complete error: %v", err)
 		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
 		return
+	}
+	// 查询到则添加任务完成记录
+	if complete {
+		err = completeMission(c.Request.Context(), username, MissionIdBecomeVolunteer)
+		if err != nil {
+			log.Errorf("get user mission_log error: %v", err)
+			c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
+			return
+		}
+		msg = ""
 	}
 
 	c.JSON(http.StatusOK, respJSON(JsonObject{
