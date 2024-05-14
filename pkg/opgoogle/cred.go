@@ -6,22 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	_ "embed"
-
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/docs/v1"
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
-)
-
-var (
-	//go:embed credentials.json
-	credJSON []byte
-	//go:embed token.json
-	tokenJSON []byte
-	//go:embed secret.json
-	secretJSON []byte
 )
 
 var (
@@ -31,11 +20,11 @@ var (
 )
 
 // GetDocsService 新建谷歌文档服务
-func GetDocsService() (*docs.Service, error) {
+func GetDocsService(secretJSON []byte) (*docs.Service, error) {
 	var err error
 
 	if docSrv == nil {
-		docSrv, err = newDocsService()
+		docSrv, err = newDocsService(secretJSON)
 		if err != nil {
 			return nil, err
 		}
@@ -45,11 +34,11 @@ func GetDocsService() (*docs.Service, error) {
 }
 
 // GetSheetService 新建谷歌报表服务
-func GetSheetService() (*sheets.Service, error) {
+func GetSheetService(credJSON, tokenJSON []byte) (*sheets.Service, error) {
 	var err error
 
 	if sheetSrv == nil {
-		sheetSrv, err = newSheetServiceByOAuth()
+		sheetSrv, err = newSheetServiceByOAuth(credJSON, tokenJSON)
 		if err != nil {
 			return nil, err
 		}
@@ -58,7 +47,7 @@ func GetSheetService() (*sheets.Service, error) {
 	return sheetSrv, nil
 }
 
-func newDocsService() (*docs.Service, error) {
+func newDocsService(secretJSON []byte) (*docs.Service, error) {
 	creds, err := google.CredentialsFromJSON(ctx, secretJSON, docs.DocumentsReadonlyScope)
 	if err != nil {
 		return nil, fmt.Errorf("get credentials error:%w", err)
@@ -72,7 +61,7 @@ func newDocsService() (*docs.Service, error) {
 	return srv, nil
 }
 
-func newSheetService() (*sheets.Service, error) {
+func newSheetService(secretJSON []byte) (*sheets.Service, error) {
 	creds, err := google.CredentialsFromJSON(ctx, secretJSON, sheets.SpreadsheetsReadonlyScope)
 	if err != nil {
 		return nil, fmt.Errorf("get credentials error:%w", err)
@@ -86,7 +75,7 @@ func newSheetService() (*sheets.Service, error) {
 	return srv, nil
 }
 
-func newSheetServiceByOAuth() (*sheets.Service, error) {
+func newSheetServiceByOAuth(credJSON, tokenJSON []byte) (*sheets.Service, error) {
 	config, err := google.ConfigFromJSON(credJSON, sheets.SpreadsheetsReadonlyScope)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to parse client secret file to config: %w", err)
