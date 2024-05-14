@@ -23,7 +23,10 @@ func TestGetDoc(t *testing.T) {
 		log.Println("Name:")
 		for _, row := range resp.Values {
 			// Print columns A and E, which correspond to indices 0 and 4.
-			log.Printf("%d %s\n", len(row), row)
+			if len(row) == 0 {
+				continue
+			}
+			log.Printf("%s\n", row[0])
 		}
 	}
 }
