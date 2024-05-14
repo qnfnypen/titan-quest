@@ -106,3 +106,16 @@ func TestComplete(t *testing.T) {
 		}
 	}
 }
+
+func TestAddUserMissionAndInviteLog(t *testing.T) {
+	err := AddUserMissionAndInviteLog(context.Background(), &model.UserMission{
+		Username:  "2",
+		MissionID: 1003,
+		Type:      4,
+		Credit:    100,
+		CreatedAt: time.Now(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}

@@ -101,7 +101,7 @@ func CreateUserExt(ctx context.Context, userExt *model.UsersExt) error {
 // CreateInviteLog 增加邀请收益记录
 func CreateInviteLog(ctx context.Context, inviteLog *model.InviteLog) error {
 	query, args, err := squirrel.Insert(inviteLog.TableName()).Columns("username", "invited_name", "mission_id", "credit", "created_at").
-		Values(inviteLog.Username, inviteLog.InvitedName, inviteLog.Credit, inviteLog.CreatedAt).ToSql()
+		Values(inviteLog.Username, inviteLog.InvitedName, inviteLog.MissionID, inviteLog.Credit, inviteLog.CreatedAt).ToSql()
 	if err != nil {
 		return fmt.Errorf("generate insert invite_log sql error:%w", err)
 	}
