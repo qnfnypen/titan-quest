@@ -37,7 +37,7 @@ func GetUserInviteLogs(ctx context.Context, name string, option QueryOption) ([]
 	}
 	// 获取详情
 	query, args, err = squirrel.Select("invited_name,MIN(created_at) AS created_at,COUNT(id) AS tasks,IFNULL(SUM(credit),0) AS credits").
-		From(inviteLog.TableName()).Where("username = ?", name).Limit(uint64(limit)).Offset(uint64(offset)).GroupBy("invited_name").OrderBy("created_at").ToSql()
+		From(inviteLog.TableName()).Where("username = ?", name).Limit(uint64(limit)).Offset(uint64(offset)).GroupBy("invited_name").OrderBy("created_at DESC").ToSql()
 	if err != nil {
 		return nil, 0, fmt.Errorf("generate sql error:%w", err)
 	}

@@ -367,7 +367,7 @@ func GetMissionLogs(ctx context.Context, name string, option QueryOption) ([]*mo
 	// 获取详情
 	query, args, err = squirrel.Select("title,title_cn,mission.created_at AS createdAt,user_mission.credit AS ucredit").
 		From(um.TableName()).LeftJoin("mission ON user_mission.mission_id = mission.id").
-		Where("username = ?", name).Limit(uint64(limit)).Offset(uint64(offset)).ToSql()
+		Where("username = ?", name).Limit(uint64(limit)).Offset(uint64(offset)).OrderBy("createdAt DESC").ToSql()
 	if err != nil {
 		return nil, 0, fmt.Errorf("generate sql error:%w", err)
 	}
