@@ -66,7 +66,7 @@ func TestGetMissionLogs(t *testing.T) {
 }
 
 func TestGetUserInviteLogs(t *testing.T) {
-	list, total, err := GetUserInviteLogs(context.Background(), "456", QueryOption{Page: 1, PageSize: 10})
+	list, total, err := GetUserInviteLogs(context.Background(), "dingktester3@163.com", QueryOption{Page: 1, PageSize: 10})
 	if err != nil {
 		t.Fatal(err)
 	}
