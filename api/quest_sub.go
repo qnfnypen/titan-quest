@@ -120,3 +120,42 @@ func checkBVComplete(un, speedID string) (bool, error) {
 
 	return false, nil
 }
+
+func checkRFComplete(un, speedID string) (bool, error) {
+	cj, tj, err := getCredAndToken()
+	if err != nil {
+		return false, err
+	}
+
+	sheetSrv, err := opgoogle.GetSheetService(cj, tj)
+	if err != nil {
+		return false, fmt.Errorf("get sheet service error:%w", err)
+	}
+	resp, err := sheetSrv.Spreadsheets.Values.Get(speedID, "sheet1!B2:E").Do()
+	if err != nil {
+		return false, fmt.Errorf("get body of sheet error:%w", err)
+	}
+
+	if len(resp.Values) == 0 {
+		return false, nil
+	}
+
+	for _, row := range resp.Values {
+		if len(row) == 0 {
+			continue
+		}
+		key, ok := row[0].(string)
+		if !ok {
+			continue
+		}
+
+		if strings.EqualFold(key, un) {
+			// 校验审核状态
+			if status, ok := row[len(row)-1].(string); ok && strings.TrimSpace(status) == "通过" {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
+}

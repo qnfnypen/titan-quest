@@ -12,6 +12,7 @@ const (
 	MissionIdVisitReferrerPage
 	MissionIdBrowsOfficialWebSite
 	MissionIdBecomeVolunteer // 成为预备志愿者
+	MissionIdReportFake      // 举报黑客假冒的Discord服务器
 )
 
 const (
