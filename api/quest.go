@@ -943,7 +943,7 @@ func checkQuoteTweet(ctx context.Context, mission *model.Mission, username strin
 		return errors.New("invalid url")
 	}
 
-	replyId := paths[len(paths)-1]
+	replyId := strings.TrimSpace(paths[len(paths)-1])
 
 	apiKey := GetUToolKeyByRoundRobin()
 	option := &swagger.TwitterGetTweesApiToolsApiTweetTimelineUsingGETOpts{}
@@ -1046,7 +1046,7 @@ func checkPostTweet(ctx context.Context, mission *model.Mission, username string
 		return errors.New("invalid url")
 	}
 
-	replyId := paths[len(paths)-1]
+	replyId := strings.TrimSpace(paths[len(paths)-1])
 
 	apiKey := GetUToolKeyByRoundRobin()
 	option := &swagger.TwitterGetTweesApiToolsApiTweetTimelineUsingGETOpts{}
