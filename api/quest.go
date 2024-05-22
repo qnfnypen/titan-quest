@@ -1729,7 +1729,7 @@ func VerifyReportFake(c *gin.Context) {
 	}
 
 	// 判断是否完成验证
-	complete, err = checkBVComplete(username, speedID)
+	complete, err = checkRFComplete(username, speedID)
 	if err != nil {
 		log.Errorf("check complete error: %v", err)
 		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
