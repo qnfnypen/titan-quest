@@ -60,7 +60,6 @@ func ServerAPI(cfg *config.Config) {
 
 	apiV1.GET("/twitter/callback", TwitterCallBackHandler)
 	apiV1.GET("/discord/callback", DiscordCallBackHandler)
-	apiV1.GET("/google/callback", GoogleCallBackHandler)
 	apiV1.GET("/telegram/callback", TelegramCallback)
 	apiV1.POST("/brows_official_website/callback", BrowsOfficialWebsiteCallback)
 
@@ -77,11 +76,9 @@ func ServerAPI(cfg *config.Config) {
 	user.GET("/info", GetUserInfoHandler)
 	user.GET("/twitter/auth", TwitterOAuthHandler)
 	user.GET("/discord/auth", DiscordOAuthHandler)
-	user.GET("/google/auth", GoogleOAuthHandler)
 	user.GET("/telegram/auth", TelegramOAuthHandler)
 
 	quest := apiV1.Group("/quest")
-	//quest.POST("/x/follow", XFollowHandler)
 	quest.GET("/query_missions", QueryMissionHandler)
 	quest.Use(authMiddleware.MiddlewareFunc())
 	quest.GET("/query_user_credits", QueryUserCreditsHandler)

@@ -32,8 +32,6 @@ import (
 	"github.com/mrjones/oauth"
 	"github.com/valyala/fastjson"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-
 	glog "log"
 )
 
@@ -110,43 +108,12 @@ func DiscordOAuthHandler(c *gin.Context) {
 	}))
 }
 
-func GoogleOAuthHandler(c *gin.Context) {
-	//claims := jwt.ExtractClaims(c)
-	//username := claims[identityKey].(string)
-	//
-	//redirectURI := c.Query("redirect_uri")
-	//if redirectURI == "" {
-	//	redirectURI = config.Cfg.RedirectURI
-	//}
-	//
-	//oauthProvider := &oauth2.Config{
-	//	ClientID:     config.Cfg.DiscordClientId,
-	//	ClientSecret: config.Cfg.DiscordClientSecret,
-	//	RedirectURL:  redirectURI,
-	//	Endpoint:     google.Endpoint,
-	//}
-
-	//state := random.GenerateRandomString(12)
-	//err := dao.AddDiscordOAuth(c.Request.Context(), &model.DiscordOauth{Username: username, State: state})
-	//if err != nil {
-	//	log.Errorf("AddTwitterOAuth: %v", err)
-	//	c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
-	//	return
-	//}
-
-	// Step 2. Redirect to the authorization screen.
-	c.JSON(http.StatusOK, respJSON(nil))
-}
-
 func TelegramOAuthHandler(c *gin.Context) {
-
 	redirectURI := c.Query("redirect_uri")
 	if redirectURI == "" {
 		redirectURI = config.Cfg.RedirectURI
 	}
 
-	//https://oauth.telegram.org/embed/titannettest_bot?origin=http%3A%2F%2F127.0.0.1%3A5500&return_to=http%3A%2F%2F127.0.0.1%3A5500%2Findex.html&size=large&request_access=write
-	//// https://oauth.telegram.org/auth?bot_id=531675494&origin=https%3A%2F%2Ftelegram.org&embed=1&request_access=write&return_to=https%3A%2F%2Ftelegram.org%2Fblog%2Flogin%23
 	origin, _ := url.Parse(redirectURI)
 
 	endpoint := "https://oauth.telegram.org/auth"
@@ -231,34 +198,6 @@ func DiscordCallBackHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, respJSON(nil))
 }
 
-func GoogleCallBackHandler(c *gin.Context) {
-	code := c.Query("code")
-	state := c.Query("state")
-
-	if code == "" || state == "" {
-		c.JSON(http.StatusOK, respErrorCode(errorsx.InvalidParams, c))
-		return
-	}
-
-	oauthProvider := &oauth2.Config{
-		ClientID:     config.Cfg.DiscordClientId,
-		ClientSecret: config.Cfg.DiscordClientSecret,
-		RedirectURL:  config.Cfg.RedirectURI,
-		Endpoint:     google.Endpoint,
-	}
-
-	tokens, err := oauthProvider.Exchange(c.Request.Context(), code)
-	if err != nil {
-		log.Errorf("Exchange: %v", err)
-		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
-		return
-	}
-
-	fmt.Println("==>", tokens)
-
-	c.JSON(http.StatusOK, respJSON(nil))
-}
-
 func TwitterCallBackHandler(c *gin.Context) {
 	oauthToken := c.Query("oauth_token")
 	oauthVerify := c.Query("oauth_verifier")
@@ -321,10 +260,6 @@ func TelegramCallback(c *gin.Context) {
 
 	hash := c.Query("hash")
 	payloadB64 := c.Query("payload")
-
-	fmt.Println("code", c.Query("code"))
-	fmt.Println("hash", hash)
-	fmt.Println("pay", payloadB64)
 
 	payloadBytes, err := base64.StdEncoding.DecodeString(payloadB64)
 	if err != nil {
