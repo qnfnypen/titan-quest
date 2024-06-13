@@ -1,18 +1,19 @@
 package api
 
 import (
-	"fmt"
+	"github.com/bwmarrin/discordgo"
+	"github.com/gnasnik/titan-quest/core/bot/discord"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gnasnik/titan-quest/config"
-	"github.com/gnasnik/titan-quest/core/bot/discord"
 	logging "github.com/ipfs/go-log/v2"
 	tele "gopkg.in/telebot.v3"
 )
 
 var (
-	Bot *tele.Bot
+	TeleBot *tele.Bot
+	DCBot   *discordgo.Session
 )
 
 var log = logging.Logger("api")
@@ -32,19 +33,24 @@ func InitBot() {
 	}
 
 	if !config.Cfg.DisableDiscordBot {
-		go discord.RunDiscordBot(config.Cfg.DiscordBotToken)
+		dbot, err := discord.NewBot(config.Cfg.DiscordBotToken)
+		if err != nil {
+			log.Fatalf("create discord bot: %v", err)
+		}
+
+		go discord.RunDiscordBot(dbot)
+
+		DCBot = dbot
 	}
 
-	fmt.Println("telegram cmd id:", b.Me.ID)
-
-	Bot = b
+	TeleBot = b
 
 }
 
 func ServerAPI(cfg *config.Config) {
 	gin.SetMode(cfg.Mode)
 	r := gin.Default()
-	//r.Use(Cors())
+	r.Use(Cors())
 	r.Use(RequestLoggerMiddleware())
 
 	apiV1 := r.Group("/api/v1")
@@ -64,6 +70,7 @@ func ServerAPI(cfg *config.Config) {
 	apiV1.POST("/brows_official_website/callback", BrowsOfficialWebsiteCallback)
 
 	apiV1.GET("/kol_referral_list", GetUserCreditsHandler)
+	apiV1.GET("/credits/list", creditsListHandler)
 
 	user := apiV1.Group("/user")
 	user.GET("/login_before", GetNonceStringHandler)

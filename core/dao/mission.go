@@ -14,7 +14,7 @@ import (
 )
 
 func AddTwitterOAuth(ctx context.Context, oauth *model.TwitterOauth) error {
-	query := `insert into twitter_oauth(username, request_token, redirect_uri) values(:username, :request_token, :redirect_uri)`
+	query := `insert into twitter_oauth(username, request_token, redirect_uri, created_at) values(:username, :request_token, :redirect_uri, now())`
 
 	_, err := DB.NamedExecContext(ctx, query, &oauth)
 	return err
@@ -47,7 +47,7 @@ func GetTwitterOauth(ctx context.Context, twitterUserId string) (*model.TwitterO
 }
 
 func AddDiscordOAuth(ctx context.Context, oauth *model.DiscordOauth) error {
-	query := `insert into discord_oauth(username, state, redirect_uri) values(:username, :state, :redirect_uri)`
+	query := `insert into discord_oauth(username, state, redirect_uri, created_at) values(:username, :state, :redirect_uri, now())`
 
 	_, err := DB.NamedExecContext(ctx, query, &oauth)
 	return err
@@ -101,6 +101,44 @@ func UpdateDiscordUserInfo(ctx context.Context, state string, discordUserId, ema
 func UpdateTwitterUserInfo(ctx context.Context, token string, twitterUserId, twitterScreenName string) error {
 	query := `update twitter_oauth set twitter_user_id = ?, twitter_screen_name =? where request_token = ?`
 	_, err := DB.ExecContext(ctx, query, twitterUserId, twitterScreenName, token)
+	return err
+}
+
+func AddTelegramOAuth(ctx context.Context, oauth *model.TelegramOauth) error {
+	query := `insert into telegram_oauth(username, code, redirect_uri, created_at) values(:username, :code, :redirect_uri, now())`
+
+	_, err := DB.NamedExecContext(ctx, query, &oauth)
+	return err
+}
+
+func GetTelegramOauthByUsername(ctx context.Context, username string) (*model.TelegramOauth, error) {
+	query := `select * from telegram_oauth where username  = ? and telegram_user_id <> 0`
+
+	var out model.TelegramOauth
+	err := DB.GetContext(ctx, &out, query, username)
+	if err != nil {
+
+		return nil, err
+	}
+
+	return &out, nil
+}
+
+func GetTelegramOauth(ctx context.Context, telegramUserId int64) (*model.TelegramOauth, error) {
+	query := `select * from telegram_oauth where telegram_user_id  = ? and username <> ''`
+
+	var out model.TelegramOauth
+	err := DB.GetContext(ctx, &out, query, telegramUserId)
+	if err != nil {
+
+		return nil, err
+	}
+
+	return &out, nil
+}
+func UpdateTelegramUserInfo(ctx context.Context, code string, telegramUserId int64, telegramUsername string) error {
+	query := `update telegram_oauth set telegram_user_id = ?, telegram_username =? where code = ?`
+	_, err := DB.ExecContext(ctx, query, telegramUserId, telegramUsername, code)
 	return err
 }
 
@@ -377,4 +415,40 @@ func GetMissionLogs(ctx context.Context, name string, option QueryOption) ([]*mo
 	}
 
 	return out, total, nil
+}
+
+func GetCreditsList(ctx context.Context, option QueryOption) (int64, []*model.UserCredit, error) {
+	limit := option.PageSize
+	offset := option.Page
+	if option.PageSize <= 0 {
+		limit = 50
+	}
+	if option.Page > 0 {
+		offset = limit * (option.Page - 1)
+	}
+
+	var total int64
+
+	countQuery := `select count(1) from ( select username from users group by username) d`
+	countQueryIn, countQueryParams, err := sqlx.In(countQuery)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	err = DB.GetContext(ctx, &total, countQueryIn, countQueryParams...)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	query := `select * from (
+		select username, IFNULL(sum(credit),0) as credits from user_mission group by username
+	) d order by credits desc LIMIT ? OFFSET ?;`
+
+	var out []*model.UserCredit
+	err = DB.SelectContext(ctx, &out, query, limit, offset)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return total, out, nil
 }

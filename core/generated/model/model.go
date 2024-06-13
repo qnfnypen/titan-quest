@@ -76,6 +76,7 @@ type Location struct {
 }
 
 type UserCredit struct {
+	Id                    int64   `json:"id" db:"-"`
 	Username              string  `json:"username" db:"username"`
 	Credits               float64 `json:"credits" db:"credits"`
 	CompletedMissionCount int     `json:"completed_mission_count" db:"completed_mission_count"`

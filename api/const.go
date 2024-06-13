@@ -6,12 +6,15 @@ const (
 	MissionIdRetweet
 	MissionIdLikeTwitter
 	MissionIdJoinDiscord
-	MissionIdJoinTelegram
+	MissionIdJoinTelegramGroup
 	MissionIdBindingKOL
 	MissionIdVisitOfficialWebsite
 	MissionIdVisitReferrerPage
 	MissionIdBrowsOfficialWebSite
 	MissionIdBecomeVolunteer // 成为预备志愿者
+	MissionIdJoinSpecifyDCChannel
+	MissionIdJoinSpecifyDCVolunteerChannel
+	MissionIdJoinTelegramVolunteerGroup
 )
 
 const (

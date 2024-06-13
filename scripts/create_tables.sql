@@ -175,6 +175,17 @@ CREATE TABLE `discord_oauth` (
 PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `telegram_oauth` (
+`id` bigint(20) NOT NULL AUTO_INCREMENT,
+`code` varchar(128) NOT NULL DEFAULT '',
+`username` varchar(128) NOT NULL DEFAULT '',
+`telegram_user_id` bigint(20) NOT NULL DEFAULT 0,
+`redirect_uri`  varchar(255) NOT NULL DEFAULT '',
+`telegram_username` varchar(128) NOT NULL DEFAULT '',
+`created_at` datetime NOT NULL DEFAULT 0,
+`updated_at` datetime NOT NULL DEFAULT 0,
+PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `user_twitter_link` (
  `id` bigint(20) NOT NULL AUTO_INCREMENT,

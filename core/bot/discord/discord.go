@@ -15,14 +15,15 @@ var (
 	membersKey       = "gm::discord::members"
 )
 
-func RunDiscordBot(token string) {
-	fmt.Println("==>", token)
-
+func NewBot(token string) (*discordgo.Session, error) {
 	s, err := discordgo.New("Bot " + token)
 	if err != nil {
-		log.Fatalf("create discord cmd: %v", err)
-		return
+		return nil, err
 	}
+	return s, nil
+}
+
+func RunDiscordBot(s *discordgo.Session) {
 
 	ctx := context.Background()
 
@@ -127,7 +128,7 @@ func RunDiscordBot(token string) {
 
 	s.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll)
 
-	err = s.Open()
+	err := s.Open()
 	if err != nil {
 		log.Fatalf("Cannot open the session: %v", err)
 	}

@@ -27,7 +27,12 @@ func main() {
 		log.Fatalf("initital: %v\n", err)
 	}
 
-	go discord.RunDiscordBot(cfg.DiscordBotToken)
+	dcBot, err := discord.NewBot(cfg.DiscordBotToken)
+	if err != nil {
+		log.Fatalf("create discord bot: %v", err)
+	}
+
+	go discord.RunDiscordBot(dcBot)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
