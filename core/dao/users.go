@@ -163,3 +163,9 @@ func GetUserResponse(ctx context.Context, username string) (*model.ResponseUser,
 
 	return &response, nil
 }
+
+func UpdateUserWalletAddress(ctx context.Context, username, address string) error {
+	query := fmt.Sprintf("update users set wallet_address = ? where username = ?")
+	_, err := DB.ExecContext(ctx, query, address, username)
+	return err
+}

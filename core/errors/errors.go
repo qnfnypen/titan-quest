@@ -34,6 +34,10 @@ const (
 
 	NotEnoughTagUsers
 
+	InvalidSignature
+	InvalidWalletAddress
+	WalletBound
+
 	Unknown = -1
 )
 
@@ -58,6 +62,9 @@ var ErrMap = map[int]string{
 	MissionUnComplete:                "Please complete mission first: 请先完成任务",
 	NoImplement:                      "No Implement: 正在开发中",
 	NotEnoughTagUsers:                "Not Enough Tag Users: Tag 用户数量不满足要求",
+	InvalidSignature:                 "invalid signature: 无效的签名",
+	InvalidWalletAddress:             "invalid wallet address: 无效的钱包地址",
+	WalletBound:                      "wallet has been bound: 钱包已被绑定",
 }
 
 var (

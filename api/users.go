@@ -45,6 +45,8 @@ const (
 	NonceStringTypeSignature NonceStringType = "4"
 )
 
+const titanWalletPrefix = "titan"
+
 var defaultNonceExpiration = 5 * time.Minute
 
 func getRedisNonceSignatureKey(username string) string {
@@ -241,4 +243,65 @@ func cacheVerifyCode(ctx context.Context, key, verifyCode string) error {
 	}
 
 	return nil
+}
+
+func BindWalletHandler(c *gin.Context) {
+	claims := jwt.ExtractClaims(c)
+	username := claims[identityKey].(string)
+
+	type bindParams struct {
+		VerifyCode string `json:"verify_code"`
+		Sign       string `json:"sign"`
+		PublicKey  string `json:"public_key"`
+		Address    string `json:"address"`
+	}
+
+	var param bindParams
+	if err := c.BindJSON(&param); err != nil {
+		c.JSON(http.StatusOK, respErrorCode(errors.InvalidParams, c))
+		return
+	}
+
+	nonce, err := getNonceFromCache(c.Request.Context(), username, NonceStringTypeSignature)
+	if err != nil {
+		log.Errorf("query nonce string: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+		return
+	}
+
+	if nonce == "" {
+		c.JSON(http.StatusOK, respErrorCode(errors.VerifyCodeExpired, c))
+		return
+	}
+
+	success, err := VerifyCosmosSign(nonce, param.Sign, param.PublicKey)
+	if err != nil || !success {
+		c.JSON(http.StatusOK, respErrorCode(errors.InvalidSignature, c))
+		return
+	}
+
+	success, err = VerifyCosmosAddr(param.Address, param.PublicKey, titanWalletPrefix)
+	if err != nil || !success {
+		c.JSON(http.StatusOK, respErrorCode(errors.InvalidWalletAddress, c))
+		return
+	}
+
+	user, err := dao.GetUserByUsername(c.Request.Context(), username)
+	if err != nil || user == nil {
+		c.JSON(http.StatusOK, respErrorCode(errors.UserNotFound, c))
+		return
+	}
+
+	if user.WalletAddress != "" {
+		c.JSON(http.StatusOK, respErrorCode(errors.WalletBound, c))
+		return
+	}
+
+	if err := dao.UpdateUserWalletAddress(context.Background(), username, param.Address); err != nil {
+		log.Errorf("update user wallet address: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+		return
+	}
+
+	c.JSON(http.StatusOK, respJSON(nil))
 }

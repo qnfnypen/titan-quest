@@ -83,6 +83,7 @@ func ServerAPI(cfg *config.Config) {
 	user.GET("/twitter/auth", TwitterOAuthHandler)
 	user.GET("/discord/auth", DiscordOAuthHandler)
 	user.GET("/telegram/auth", TelegramOAuthHandler)
+	user.POST("/wallet/bind", BindWalletHandler)
 
 	quest := apiV1.Group("/quest")
 	quest.GET("/query_missions", QueryMissionHandler)
