@@ -32,25 +32,24 @@ func InitBot() {
 		return
 	}
 
+	dbot, err := discord.NewBot(config.Cfg.DiscordBotToken)
+	if err != nil {
+		log.Fatalf("create discord bot: %v", err)
+	}
+
 	if !config.Cfg.DisableDiscordBot {
-		dbot, err := discord.NewBot(config.Cfg.DiscordBotToken)
-		if err != nil {
-			log.Fatalf("create discord bot: %v", err)
-		}
-
 		go discord.RunDiscordBot(dbot)
-
-		DCBot = dbot
 	}
 
 	TeleBot = b
+	DCBot = dbot
 
 }
 
 func ServerAPI(cfg *config.Config) {
 	gin.SetMode(cfg.Mode)
 	r := gin.Default()
-	r.Use(Cors())
+	// r.Use(Cors())
 	r.Use(RequestLoggerMiddleware())
 
 	apiV1 := r.Group("/api/v1")

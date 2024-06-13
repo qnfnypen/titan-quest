@@ -517,6 +517,8 @@ func CheckQuestHandler(c *gin.Context) {
 		err = checkPostTweet(c.Request.Context(), mission, username, option)
 	case MissionIdInviteFriendsToDiscord:
 		err = checkInviteFriendsToDiscord(c.Request.Context(), mission, username, option)
+	case MissionIdJoinSpecifyDCVolunteerChannel:
+		err = checkJoinVolunteerChannel(c.Request.Context(), mission, username, option)
 	default:
 		c.JSON(http.StatusOK, respErrorCode(errorsx.NoImplement, c))
 		return
@@ -1076,8 +1078,6 @@ func checkJoinTelegram(ctx context.Context, mission *model.Mission, username str
 	groupIdStr := openURL.Query().Get("id")
 	groupId, _ := strconv.ParseInt(groupIdStr, 10, 64)
 
-	fmt.Println(telegramOauth.TelegramUserID, mission.OpenUrl)
-
 	_, err = TeleBot.ChatMemberOf(&tele.Chat{ID: groupId}, &tele.Chat{ID: telegramOauth.TelegramUserID})
 	if err != nil {
 		fmt.Println("chat member of: ", err)
@@ -1272,6 +1272,60 @@ func checkInviteFriendsToDiscord(ctx context.Context, mission *model.Mission, us
 
 	if completedCount <= 0 {
 		return errors.New("complete mission first")
+	}
+
+	return nil
+}
+
+func checkJoinVolunteerChannel(ctx context.Context, mission *model.Mission, username string, queryOpt dao.QueryOption) error {
+	discordUser, err := dao.GetDiscordOAuthByUsername(ctx, username)
+	if err != nil {
+		log.Errorf("GetDiscordOAuthByUsername: %v", err)
+		return err
+	}
+
+	openURL, err := url.Parse(mission.OpenUrl)
+	if err != nil {
+		log.Errorf("Parse OPEN URL: %v", err)
+		return err
+	}
+
+	paths := strings.Split(openURL.Path, "/")
+	if len(paths) <= 0 {
+		return errors.New("invalid discord url")
+	}
+
+	channelId := paths[len(paths)-1]
+
+	permission, err := DCBot.UserChannelPermissions(discordUser.DiscordUserID, channelId)
+	if err != nil {
+		return err
+	}
+
+	if permission < 0 {
+		return errors.New("you not have permission to this channel")
+	}
+
+	ums, err := dao.GetUserMissionByMissionId(ctx, username, mission.ID, queryOpt)
+	if err != nil {
+		log.Errorf("GetUserMissionByUser: %v", err)
+		return err
+	}
+
+	if len(ums) == 0 {
+		err = dao.AddUserMissionAndInviteLog(ctx, &model.UserMission{
+			Username:  username,
+			MissionID: mission.ID,
+			Type:      mission.Type,
+			Credit:    mission.Credit,
+			Content:   discordUser.DiscordUserID,
+			CreatedAt: time.Now(),
+		})
+
+		if err != nil {
+			log.Errorf("AddUserMission: %v", err)
+			return err
+		}
 	}
 
 	return nil

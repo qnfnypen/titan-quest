@@ -12,7 +12,6 @@ const (
 	MissionIdVisitReferrerPage
 	MissionIdBrowsOfficialWebSite
 	MissionIdBecomeVolunteer // 成为预备志愿者
-	MissionIdJoinSpecifyDCChannel
 	MissionIdJoinSpecifyDCVolunteerChannel
 	MissionIdJoinTelegramVolunteerGroup
 )
