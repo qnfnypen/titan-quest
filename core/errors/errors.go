@@ -36,6 +36,7 @@ const (
 
 	InvalidSignature
 	InvalidWalletAddress
+	InvalidPublicKey
 	WalletBound
 
 	Unknown = -1
@@ -64,6 +65,7 @@ var ErrMap = map[int]string{
 	NotEnoughTagUsers:                "Not Enough Tag Users: Tag 用户数量不满足要求",
 	InvalidSignature:                 "invalid signature: 无效的签名",
 	InvalidWalletAddress:             "invalid wallet address: 无效的钱包地址",
+	InvalidPublicKey:                 "invalid public key: 无效的公钥地址",
 	WalletBound:                      "wallet has been bound: 钱包已被绑定",
 }
 

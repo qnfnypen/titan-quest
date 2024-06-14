@@ -2,8 +2,10 @@ package api
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"net/http"
 	"strings"
 	"time"
@@ -191,8 +193,6 @@ func GetNumericVerifyCodeHandler(c *gin.Context) {
 		key = getRedisNonceLoginKey(userInfo.Username)
 	case NonceStringTypeReset:
 		key = getRedisNonceResetKey(userInfo.Username)
-	case NonceStringTypeSignature:
-		key = getRedisNonceSignatureKey(userInfo.Username)
 	default:
 		c.JSON(http.StatusOK, respErrorCode(errors.UnsupportedVerifyCodeType, c))
 		return
@@ -262,7 +262,7 @@ func BindWalletHandler(c *gin.Context) {
 		return
 	}
 
-	nonce, err := getNonceFromCache(c.Request.Context(), username, NonceStringTypeSignature)
+	nonce, err := getNonceFromCache(c.Request.Context(), param.Address, NonceStringTypeSignature)
 	if err != nil {
 		log.Errorf("query nonce string: %v", err)
 		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
@@ -274,15 +274,29 @@ func BindWalletHandler(c *gin.Context) {
 		return
 	}
 
-	success, err := VerifyCosmosSign(nonce, param.Sign, param.PublicKey)
+	success, err := VerifyCosmosAddr(param.Address, param.PublicKey, titanWalletPrefix)
 	if err != nil || !success {
+		c.JSON(http.StatusOK, respErrorCode(errors.InvalidWalletAddress, c))
+		return
+	}
+
+	bytePubKey, err := hex.DecodeString(param.PublicKey)
+	if err != nil {
+		c.JSON(http.StatusOK, respErrorCode(errors.InvalidPublicKey, c))
+		return
+	}
+
+	byteSignature, err := hex.DecodeString(param.Sign)
+	if err != nil {
 		c.JSON(http.StatusOK, respErrorCode(errors.InvalidSignature, c))
 		return
 	}
 
-	success, err = VerifyCosmosAddr(param.Address, param.PublicKey, titanWalletPrefix)
+	pubKey := secp256k1.PubKey{Key: bytePubKey}
+
+	success, err = VerifyArbitraryMsg(param.Address, nonce, byteSignature, pubKey)
 	if err != nil || !success {
-		c.JSON(http.StatusOK, respErrorCode(errors.InvalidWalletAddress, c))
+		c.JSON(http.StatusOK, respErrorCode(errors.InvalidSignature, c))
 		return
 	}
 
@@ -299,6 +313,13 @@ func BindWalletHandler(c *gin.Context) {
 
 	if err := dao.UpdateUserWalletAddress(context.Background(), username, param.Address); err != nil {
 		log.Errorf("update user wallet address: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+		return
+	}
+
+	err = completeMission(c.Request.Context(), username, MissionIdBindTitanWallet)
+	if err != nil {
+		log.Errorf("complete brows official website error: %v", err)
 		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
 		return
 	}

@@ -24,17 +24,15 @@ func InitBot() {
 		Poller: &tele.LongPoller{Timeout: 10 * time.Second},
 	}
 
-	//groupId := int64(-1002050663753)
-
 	b, err := tele.NewBot(pref)
 	if err != nil {
-		log.Fatalf("create telegram cmd: %v", err)
+		log.Errorf("create telegram cmd: %v", err)
 		return
 	}
 
 	dbot, err := discord.NewBot(config.Cfg.DiscordBotToken)
 	if err != nil {
-		log.Fatalf("create discord bot: %v", err)
+		log.Errorf("create discord bot: %v", err)
 	}
 
 	if !config.Cfg.DisableDiscordBot {

@@ -122,6 +122,7 @@ func TelegramOAuthHandler(c *gin.Context) {
 	values.Add("bot_id", config.Cfg.TelegramBotID)
 	values.Add("origin", origin.Scheme+"://"+origin.Host)
 	values.Add("embed", "0")
+	values.Add("request_access", "write")
 	values.Add("return_to", redirectURI+"?code="+code)
 
 	telegramAuthURL.RawQuery = values.Encode()
@@ -369,7 +370,7 @@ func QueryUserCreditsHandler(c *gin.Context) {
 		log.Errorf("GetUserMissionByUser: %v", err)
 	}
 
-	var basicMission []*model.UserMission
+	var basicUserMission []*model.UserMission
 	for _, bs := range completeBasicMission {
 		if bs.MissionID == MissionIdLikeTwitter || bs.MissionID == MissionIdRetweet {
 			mission, err := dao.GetMissionById(c.Request.Context(), bs.MissionID)
@@ -384,19 +385,44 @@ func QueryUserCreditsHandler(c *gin.Context) {
 			}
 		}
 
-		basicMission = append(basicMission, bs)
+		basicUserMission = append(basicUserMission, bs)
 	}
 
 	// 获取已完成的每日任务
-	dailyMission, err := dao.GetUserMissionByUser(c.Request.Context(), username, 2, dao.QueryOption{StartTime: carbon.Now().StartOfDay().String()})
+	dailyUserMission, err := dao.GetUserMissionByUser(c.Request.Context(), username, 2, dao.QueryOption{StartTime: carbon.Now().StartOfDay().String()})
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Errorf("GetUserMissionByUser: %v", err)
 	}
 
 	// 获取已完成的每周任务
-	weeklyMission, err := dao.GetUserMissionByUser(c.Request.Context(), username, 3, dao.QueryOption{StartTime: carbon.Now().StartOfWeek().String()})
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		log.Errorf("GetUserMissionByUser: %v", err)
+	//weeklyMission, err := dao.GetUserMissionByUser(c.Request.Context(), username, 3, dao.QueryOption{StartTime: carbon.Now().StartOfWeek().String()})
+	//if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	//	log.Errorf("GetUserMissionByUser: %v", err)
+	//}
+
+	var (
+		basicMissions    []*model.UserMission
+		twitterMissions  []*model.UserMission
+		discordMissions  []*model.UserMission
+		telegramMissions []*model.UserMission
+	)
+
+	for _, um := range append(basicUserMission, dailyUserMission...) {
+		mission, err := dao.GetMissionById(c.Request.Context(), um.MissionID)
+		if err != nil {
+			continue
+		}
+
+		switch mission.Channel {
+		case "Wallet", "Titan":
+			basicMissions = append(basicMissions, um)
+		case "Twitter":
+			twitterMissions = append(twitterMissions, um)
+		case "Discord":
+			discordMissions = append(discordMissions, um)
+		case "Telegram":
+			telegramMissions = append(telegramMissions, um)
+		}
 	}
 
 	credits, err := dao.SumUserCredits(c.Request.Context(), username)
@@ -430,9 +456,10 @@ func QueryUserCreditsHandler(c *gin.Context) {
 		"twitter_user_id": twitterUserId,
 		"discord_user_id": discordUserId,
 		"missions": JsonObject{
-			"basic_mission":  basicMission,
-			"daily_mission":  dailyMission,
-			"weekly_mission": weeklyMission,
+			"basic_missions":    basicMissions,
+			"twitter_missions":  twitterMissions,
+			"discord_missions":  discordMissions,
+			"telegram_missions": telegramMissions,
 		},
 	}))
 }

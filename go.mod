@@ -19,6 +19,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/xid v1.5.0
 	github.com/spf13/viper v1.18.2
+	github.com/stretchr/testify v1.9.0
 	github.com/valyala/fastjson v1.6.4
 	golang.org/x/oauth2 v0.19.0
 	google.golang.org/api v0.162.0
@@ -37,9 +38,13 @@ require (
 	cosmossdk.io/math v1.3.0 // indirect
 	cosmossdk.io/store v1.1.0 // indirect
 	cosmossdk.io/x/tx v0.13.3 // indirect
+	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
+	github.com/MyriadFlow/cosmos-wallet v0.0.0-20221006130844-836e7280bfc6 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
+	github.com/btcsuite/btcd/btcutil v1.1.5 // indirect
+	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cockroachdb/errors v1.11.1 // indirect
@@ -82,6 +87,7 @@ require (
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-metrics v0.5.3 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
+	github.com/hdevalence/ed25519consensus v0.1.0 // indirect
 	github.com/holiman/uint256 v1.2.4 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -107,7 +113,6 @@ require (
 	github.com/sasha-s/go-deadlock v0.3.1 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/cobra v1.8.0 // indirect
-	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	go.etcd.io/bbolt v1.3.8 // indirect

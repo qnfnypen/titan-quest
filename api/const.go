@@ -1,7 +1,8 @@
 package api
 
 const (
-	MissionIdConnectWallet int64 = iota + 1001
+	MissionIdBindTitanWallet int64 = iota + 1000
+	MissionIdConnectWallet
 	MissionIdFollowTwitter
 	MissionIdRetweet
 	MissionIdLikeTwitter
