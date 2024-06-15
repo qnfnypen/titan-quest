@@ -518,7 +518,7 @@ func CheckQuestHandler(c *gin.Context) {
 		err = checkPostTweet(c.Request.Context(), mission, username, option)
 	case MissionIdInviteFriendsToDiscord:
 		err = checkInviteFriendsToDiscord(c.Request.Context(), mission, username, option)
-	case MissionIdJoinSpecifyDCVolunteerChannel:
+	case MissionIdJoinDCVolunteerChannel:
 		err = checkJoinVolunteerChannel(c.Request.Context(), mission, username, option)
 	default:
 		c.JSON(http.StatusOK, respErrorCode(errorsx.NoImplement, c))
@@ -1072,15 +1072,7 @@ func checkJoinTelegram(ctx context.Context, mission *model.Mission, username str
 		return err
 	}
 
-	openURL, err := url.Parse(mission.OpenUrl)
-	if err != nil {
-		log.Errorf("Parse OPEN URL: %v", err)
-		return err
-	}
-
-	groupIdStr := openURL.Query().Get("id")
-	groupId, _ := strconv.ParseInt(groupIdStr, 10, 64)
-
+	groupId, _ := strconv.ParseInt(mission.TargetID, 10, 64)
 	_, err = TeleBot.ChatMemberOf(&tele.Chat{ID: groupId}, &tele.Chat{ID: telegramOauth.TelegramUserID})
 	if err != nil {
 		fmt.Println("chat member of: ", err)
@@ -1287,26 +1279,15 @@ func checkJoinVolunteerChannel(ctx context.Context, mission *model.Mission, user
 		return err
 	}
 
-	openURL, err := url.Parse(mission.OpenUrl)
-	if err != nil {
-		log.Errorf("Parse OPEN URL: %v", err)
-		return err
-	}
-
-	paths := strings.Split(openURL.Path, "/")
-	if len(paths) <= 0 {
-		return errors.New("invalid discord url")
-	}
-
-	channelId := paths[len(paths)-1]
+	channelId := mission.TargetID
 
 	permission, err := DCBot.UserChannelPermissions(discordUser.DiscordUserID, channelId)
 	if err != nil {
 		return err
 	}
 
-	if permission < 0 {
-		return errors.New("you not have permission to this channel")
+	if permission&discordgo.PermissionViewChannel == 0 {
+		return errors.New("please complete mission first")
 	}
 
 	ums, err := dao.GetUserMissionByMissionId(ctx, username, mission.ID, queryOpt)

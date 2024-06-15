@@ -13,7 +13,7 @@ const (
 	MissionIdVisitReferrerPage
 	MissionIdBrowsOfficialWebSite
 	MissionIdBecomeVolunteer // 成为预备志愿者
-	MissionIdJoinSpecifyDCVolunteerChannel
+	MissionIdJoinDCVolunteerChannel
 	MissionIdJoinTelegramVolunteerGroup
 )
 

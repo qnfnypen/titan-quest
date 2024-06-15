@@ -121,6 +121,7 @@ CREATE TABLE `mission` (
 `credit` bigint(20) NOT NULL DEFAULT 0,
 `status` int(1) NOT NULL DEFAULT 0,
 `open_url` text NOT NULL,
+`target_id` varchar(128) NOT NULL DEFAULT '',
 `start_time` datetime NOT NULL DEFAULT 0,
 `end_time` datetime NOT NULL DEFAULT 0,
 `type` int(4) NOT NULL DEFAULT 0,

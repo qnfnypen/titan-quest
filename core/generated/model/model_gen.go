@@ -90,6 +90,7 @@ type Mission struct {
 	Credit    int64     `db:"credit" json:"credit"`
 	Status    int32     `db:"status" json:"status"`
 	OpenUrl   string    `db:"open_url" json:"open_url"`
+	TargetID  string    `db:"target_id" json:"target_id"`
 	StartTime time.Time `db:"start_time" json:"start_time"`
 	EndTime   time.Time `db:"end_time" json:"end_time"`
 	Type      int32     `db:"type" json:"type"`
@@ -127,6 +128,7 @@ type SubMission struct {
 	Credit    int64     `db:"credit" json:"credit"`
 	Status    int32     `db:"status" json:"status"`
 	OpenUrl   string    `db:"open_url" json:"open_url"`
+	TargetID  string    `db:"target_id" json:"target_id"`
 	StartTime time.Time `db:"start_time" json:"start_time"`
 	EndTime   time.Time `db:"end_time" json:"end_time"`
 	Type      int32     `db:"type" json:"type"`
