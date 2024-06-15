@@ -280,6 +280,17 @@ func BindWalletHandler(c *gin.Context) {
 		return
 	}
 
+	isWalletBound, err := dao.IsWalletAddressExists(c.Request.Context(), param.Address)
+	if err != nil {
+		c.JSON(http.StatusOK, respErrorCode(errors.InternalServer, c))
+		return
+	}
+
+	if isWalletBound {
+		c.JSON(http.StatusOK, respErrorCode(errors.WalletBound, c))
+		return
+	}
+
 	bytePubKey, err := hex.DecodeString(param.PublicKey)
 	if err != nil {
 		c.JSON(http.StatusOK, respErrorCode(errors.InvalidPublicKey, c))

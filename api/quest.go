@@ -2,8 +2,10 @@ package api
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"database/sql"
-	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -106,37 +108,57 @@ func DiscordOAuthHandler(c *gin.Context) {
 	}))
 }
 
-func TelegramOAuthHandler(c *gin.Context) {
+func TelegramBindHandler(c *gin.Context) {
 	claims := jwt.ExtractClaims(c)
 	username := claims[identityKey].(string)
 
-	redirectURI := c.Query("redirect_uri")
-	origin, _ := url.Parse(redirectURI)
+	hash := c.Query("hash")
+	telegramId, _ := strconv.ParseInt(c.Query("id"), 10, 64)
+	telegramUser := c.Query("username")
 
-	endpoint := "https://oauth.telegram.org/auth"
-	telegramAuthURL, _ := url.Parse(endpoint)
+	values := c.Request.URL.Query()
+	values.Del("hash")
 
-	code := random.GenerateRandomString(12)
+	dataToCheck, _ := url.QueryUnescape(strings.ReplaceAll(values.Encode(), "&", "\n"))
+	secretKey := sha256.Sum256([]byte(config.Cfg.TelegramBotToken))
+	if hex.EncodeToString(hmacHash([]byte(dataToCheck), secretKey[:])) != hash {
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InvalidParams, c))
+		return
+	}
 
-	values := telegramAuthURL.Query()
-	values.Add("bot_id", config.Cfg.TelegramBotID)
-	values.Add("origin", origin.Scheme+"://"+origin.Host)
-	values.Add("embed", "0")
-	values.Add("request_access", "write")
-	values.Add("return_to", redirectURI+"?code="+code)
+	existing, err := dao.GetTelegramOauthByUsername(c.Request.Context(), username)
+	if existing != nil {
+		c.JSON(http.StatusOK, respJSON(nil))
+		return
+	}
 
-	telegramAuthURL.RawQuery = values.Encode()
-
-	err := dao.AddTelegramOAuth(c.Request.Context(), &model.TelegramOauth{Username: username, Code: code, RedirectUri: redirectURI, CreatedAt: time.Now()})
-	if err != nil {
-		log.Errorf("AddTwitterOAuth: %v", err)
+	if !errors.Is(err, sql.ErrNoRows) {
+		log.Errorf("err %v", err)
 		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
 		return
 	}
 
-	c.JSON(http.StatusOK, respJSON(JsonObject{
-		"url": telegramAuthURL.String(),
-	}))
+	code := random.GenerateRandomString(12)
+	err = dao.AddTelegramUserInfo(c.Request.Context(), &model.TelegramOauth{
+		Code:             code,
+		Username:         username,
+		TelegramUserID:   telegramId,
+		TelegramUsername: telegramUser,
+	})
+	if err != nil {
+		log.Errorf("UpdateTelegramUserInfo: %v", err)
+		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
+		return
+	}
+
+	c.JSON(http.StatusOK, respJSON(nil))
+}
+
+// hmacHash hashes data with a provided key using HMAC and SHA256
+func hmacHash(data, key []byte) []byte {
+	h := hmac.New(sha256.New, key)
+	_, _ = h.Write(data)
+	return h.Sum(nil)
 }
 
 func DiscordCallBackHandler(c *gin.Context) {
@@ -243,61 +265,6 @@ func TwitterCallBackHandler(c *gin.Context) {
 	err = dao.UpdateTwitterUserInfo(c.Request.Context(), oauthToken, userId, screenName)
 	if err != nil {
 		log.Errorf("UpdateTwitterUserInfo: %v", err)
-		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
-		return
-	}
-
-	c.JSON(http.StatusOK, respJSON(nil))
-}
-
-func TelegramCallback(c *gin.Context) {
-	type User struct {
-		Id        int64  `json:"id"`
-		FirstName string `json:"first_name"`
-		LastName  string `json:"last_name"`
-		Username  string `json:"username"`
-		Hash      string `json:"hash"`
-	}
-
-	payloadB64 := c.Query("tgAuthResult")
-	code := c.Query("code")
-
-	payloadBytes, err := base64.StdEncoding.DecodeString(payloadB64)
-	if err != nil {
-		log.Errorf("decode payload: %v", err)
-		c.JSON(http.StatusOK, respErrorCode(errorsx.InvalidParams, c))
-		return
-	}
-
-	var user User
-	err = json.Unmarshal(payloadBytes, &user)
-	if err != nil {
-		c.JSON(http.StatusOK, respErrorCode(errorsx.InvalidParams, c))
-		return
-	}
-
-	//h := hmac.New(sha256.New, []byte(config.Cfg.TelegramBotToken))
-	//h.Write([]byte(payloadB64))
-	//checkHash := hex.EncodeToString(h.Sum(nil))
-	//
-	//if user.Hash != checkHash {
-	//	log.Errorf("invalid hash: want %s got %s", checkHash, user.Hash)
-	//	c.JSON(http.StatusOK, respErrorCode(errorsx.InvalidParams, c))
-	//	return
-	//}
-
-	userId := user.Id
-	username := user.Username
-
-	ta, err := dao.GetTelegramOauth(c.Request.Context(), userId)
-	if ta != nil && ta.Username != "" {
-		c.JSON(http.StatusOK, respErrorCode(errorsx.SocialMediaAccountIsAlreadyInUse, c))
-		return
-	}
-
-	err = dao.UpdateTelegramUserInfo(c.Request.Context(), code, userId, username)
-	if err != nil {
-		log.Errorf("UpdateTelegramUserInfo: %v", err)
 		c.JSON(http.StatusOK, respErrorCode(errorsx.InternalServer, c))
 		return
 	}
@@ -429,14 +396,16 @@ func QueryUserCreditsHandler(c *gin.Context) {
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Errorf("SumUserCredits: %v", err)
 	}
+
 	icredits, err := dao.SumInviteCredits(c.Request.Context(), username)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Errorf("SumUserCredits: %v", err)
 	}
 
 	var (
-		twitterUserId string
-		discordUserId string
+		twitterUserId  string
+		discordUserId  string
+		telegramUserId int64
 	)
 	twitterUser, err := dao.GetTwitterOauthByUsername(c.Request.Context(), username)
 	if twitterUser != nil {
@@ -448,13 +417,18 @@ func QueryUserCreditsHandler(c *gin.Context) {
 		discordUserId = discordUser.DiscordUserID
 	}
 
+	telegramUser, err := dao.GetTelegramOauthByUsername(c.Request.Context(), username)
+	if telegramUser != nil {
+		telegramUserId = telegramUser.TelegramUserID
+	}
+
 	c.JSON(http.StatusOK, respJSON(JsonObject{
-		"address":         username,
-		"credits":         credits + icredits,
-		"today_credits":   0,
-		"week_credits":    0,
-		"twitter_user_id": twitterUserId,
-		"discord_user_id": discordUserId,
+		"address":          username,
+		"credits":          credits,
+		"invite_credits":   icredits,
+		"twitter_user_id":  twitterUserId,
+		"discord_user_id":  discordUserId,
+		"telegram_user_id": telegramUserId,
 		"missions": JsonObject{
 			"basic_missions":    basicMissions,
 			"twitter_missions":  twitterMissions,
@@ -587,7 +561,7 @@ func GetUToolKeyByRoundRobin() string {
 }
 
 func completeConnectWalletMission(ctx context.Context, address string) error {
-	mission, err := dao.GetMissionById(ctx, MissionIdConnectWallet)
+	mission, err := dao.GetMissionById2(ctx, MissionIdConnectWallet)
 	if err != nil {
 		log.Errorf("GetMissionById: %v", err)
 		return err
@@ -750,6 +724,8 @@ func checkLikeTweet(ctx context.Context, mission *model.Mission, username string
 	var liked bool
 
 	entries := v.Get("data").Get("favoriters_timeline").Get("timeline").Get("instructions", "0").GetArray("entries")
+
+	fmt.Println("==>", v.Get("data"))
 
 	for _, e := range entries {
 		twitterUserId := e.Get("content").Get("itemContent").Get("user_results").Get("result").GetStringBytes("rest_id")
@@ -1743,10 +1719,26 @@ func creditsListHandler(c *gin.Context) {
 	offset := (option.Page - 1) * option.PageSize
 	for i, deviceInfo := range credits {
 		deviceInfo.Id = int64(i + 1 + offset)
+		deviceInfo.Username = maskAddress(deviceInfo.Username)
 	}
 
 	c.JSON(http.StatusOK, respJSON(JsonObject{
 		"list":  credits,
 		"total": total,
 	}))
+}
+
+func maskAddress(address string) string {
+	words := strings.Split(address, ".")
+	if len(words) < 2 {
+		return address[:3] + "****" + address[len(address)-3:]
+	}
+
+	prefix, suffix := words[0], words[1]
+
+	if len(prefix) > 5 {
+		return prefix[:3] + "****" + prefix[len(prefix)-2:] + "." + suffix
+	}
+
+	return prefix[:3] + "****" + "." + suffix
 }

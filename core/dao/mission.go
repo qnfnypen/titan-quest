@@ -117,28 +117,16 @@ func GetTelegramOauthByUsername(ctx context.Context, username string) (*model.Te
 	var out model.TelegramOauth
 	err := DB.GetContext(ctx, &out, query, username)
 	if err != nil {
-
 		return nil, err
 	}
 
 	return &out, nil
 }
 
-func GetTelegramOauth(ctx context.Context, telegramUserId int64) (*model.TelegramOauth, error) {
-	query := `select * from telegram_oauth where telegram_user_id  = ? and username <> ''`
-
-	var out model.TelegramOauth
-	err := DB.GetContext(ctx, &out, query, telegramUserId)
-	if err != nil {
-
-		return nil, err
-	}
-
-	return &out, nil
-}
-func UpdateTelegramUserInfo(ctx context.Context, code string, telegramUserId int64, telegramUsername string) error {
-	query := `update telegram_oauth set telegram_user_id = ?, telegram_username =? where code = ?`
-	_, err := DB.ExecContext(ctx, query, telegramUserId, telegramUsername, code)
+func AddTelegramUserInfo(ctx context.Context, to *model.TelegramOauth) error {
+	query := `insert into telegram_oauth(code, username, telegram_user_id, telegram_username, created_at, updated_at) values 
+		(:code, :username, :telegram_user_id, :telegram_username, now(), now())`
+	_, err := DB.NamedExecContext(ctx, query, to)
 	return err
 }
 
@@ -168,6 +156,18 @@ func GetSubMissions(ctx context.Context, parentId int64) ([]*model.Mission, erro
 
 func GetMissionById(ctx context.Context, missionId int64) (*model.Mission, error) {
 	query := `select * from mission where status = 1 and id = ? order by id`
+
+	var out model.Mission
+	err := DB.GetContext(ctx, &out, query, missionId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &out, nil
+}
+
+func GetMissionById2(ctx context.Context, missionId int64) (*model.Mission, error) {
+	query := `select * from mission where id = ? order by id`
 
 	var out model.Mission
 	err := DB.GetContext(ctx, &out, query, missionId)
@@ -403,7 +403,7 @@ func GetMissionLogs(ctx context.Context, name string, option QueryOption) ([]*mo
 		return nil, 0, fmt.Errorf("get total of invite_log error:%w", err)
 	}
 	// 获取详情
-	query, args, err = squirrel.Select("title,title_cn,mission.created_at AS createdAt,user_mission.credit AS ucredit").
+	query, args, err = squirrel.Select("title,title_cn,user_mission.created_at AS createdAt,user_mission.credit AS ucredit").
 		From(um.TableName()).LeftJoin("mission ON user_mission.mission_id = mission.id").
 		Where("username = ?", name).Limit(uint64(limit)).Offset(uint64(offset)).OrderBy("createdAt DESC").ToSql()
 	if err != nil {
@@ -429,7 +429,7 @@ func GetCreditsList(ctx context.Context, option QueryOption) (int64, []*model.Us
 
 	var total int64
 
-	countQuery := `select count(1) from ( select username from users group by username) d`
+	countQuery := `select count(1) from ( select t.username from (select username, credit from user_mission union all select username, credit from invite_log) t group by t.username) d`
 	countQueryIn, countQueryParams, err := sqlx.In(countQuery)
 	if err != nil {
 		return 0, nil, err
@@ -441,8 +441,8 @@ func GetCreditsList(ctx context.Context, option QueryOption) (int64, []*model.Us
 	}
 
 	query := `select * from (
-		select username, IFNULL(sum(credit),0) as credits from user_mission group by username
-	) d order by credits desc LIMIT ? OFFSET ?;`
+		select t.username, IFNULL(sum(t.credit),0) as credits from (select username, credit from user_mission union all select username, credit from invite_log) t group by t.username
+	) d order by d.credits desc LIMIT ? OFFSET ?;`
 
 	var out []*model.UserCredit
 	err = DB.SelectContext(ctx, &out, query, limit, offset)

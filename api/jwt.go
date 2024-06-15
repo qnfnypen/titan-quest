@@ -105,6 +105,10 @@ func jwtGinMiddleware(secretKey string) (*jwt.GinJWTMiddleware, error) {
 				return nil, err
 			}
 
+			if err := completeConnectWalletMission(c.Request.Context(), loginParams.Address); err != nil {
+				log.Errorf("completeConnectWalletMission: %v", err)
+			}
+
 			return user, nil
 		},
 		Unauthorized: func(c *gin.Context, code int, message string) {

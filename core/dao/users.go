@@ -35,6 +35,23 @@ func GetUserByUsername(ctx context.Context, username string) (*model.User, error
 	return &out, nil
 }
 
+func IsWalletAddressExists(ctx context.Context, walletAddress string) (bool, error) {
+	var out model.User
+	err := DB.QueryRowxContext(ctx, fmt.Sprintf(
+		`SELECT * FROM users WHERE wallet_address = ?`), walletAddress,
+	).StructScan(&out)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 func GetUserIds(ctx context.Context) ([]string, error) {
 	queryStatement := fmt.Sprintf(`SELECT username as user_id FROM users;`)
 	var out []string
