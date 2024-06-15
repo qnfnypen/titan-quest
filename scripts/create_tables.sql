@@ -1,6 +1,6 @@
-CREATE DATABASE IF NOT EXISTS `titan_quest` DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
+CREATE DATABASE IF NOT EXISTS `titan_quest_2` DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
 
-USE `titan_quest`;
+USE `titan_quest_2`;
 
 -- ----------------------------
 -- Table structure for users
