@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -427,31 +428,69 @@ func GetCreditsList(ctx context.Context, option QueryOption) (int64, []*model.Us
 		offset = limit * (option.Page - 1)
 	}
 
-	var total int64
-
-	countQuery := `	select count(1) from (
-		select t.username from (select username from user_mission union all select username from invite_log) t group by t.username  limit 500) d `
-	countQueryIn, countQueryParams, err := sqlx.In(countQuery)
+	userCredits, err := GetUserCreditsFromCache(ctx)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	err = DB.GetContext(ctx, &total, countQueryIn, countQueryParams...)
-	if err != nil {
-		return 0, nil, err
+	total := len(userCredits)
+
+	if total <= limit {
+		return int64(total), userCredits, nil
+	}
+
+	if total <= offset {
+		return int64(total), nil, nil
+	}
+
+	return int64(total), userCredits[offset : offset+limit], nil
+}
+
+func GetUserCreditsFromCache(ctx context.Context) ([]*model.UserCredit, error) {
+	userCredits, err := GetUserCredits(ctx)
+	if err == nil {
+		return userCredits, nil
 	}
 
 	query := `select * from (
-	select * from (
 		select t.username, IFNULL(sum(t.credit),0) as credits from (select username, credit from user_mission union all select username, credit from invite_log) t group by t.username 
-	) d order by d.credits desc limit 500
-	) f LIMIT ? OFFSET ?;`
+	) d order by d.credits desc limit 500`
 
-	var out []*model.UserCredit
-	err = DB.SelectContext(ctx, &out, query, limit, offset)
+	err = DB.SelectContext(ctx, &userCredits, query)
 	if err != nil {
-		return 0, nil, err
+		return nil, err
 	}
 
-	return total, out, nil
+	err = SaveUserCredits(ctx, userCredits)
+	if err != nil {
+		return nil, err
+	}
+
+	return userCredits, nil
+}
+
+func SaveUserCredits(ctx context.Context, uc []*model.UserCredit) error {
+	key := fmt.Sprintf("TITAN::QUEST::USER::CREDITS")
+	data, err := json.Marshal(uc)
+	if err != nil {
+		return err
+	}
+	_, err = RedisCache.Set(ctx, key, data, time.Minute).Result()
+	return err
+}
+
+func GetUserCredits(ctx context.Context) ([]*model.UserCredit, error) {
+	key := fmt.Sprintf("TITAN::QUEST::USER::CREDITS")
+	data, err := RedisCache.Get(ctx, key).Bytes()
+	if err != nil {
+		return nil, err
+	}
+
+	var out []*model.UserCredit
+	err = json.Unmarshal(data, &out)
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
