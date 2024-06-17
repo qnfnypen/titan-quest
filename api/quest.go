@@ -116,6 +116,12 @@ func TelegramBindHandler(c *gin.Context) {
 	telegramId, _ := strconv.ParseInt(c.Query("id"), 10, 64)
 	telegramUser := c.Query("username")
 
+	dau, err := dao.GetTelegramOAuth(c.Request.Context(), telegramId)
+	if dau != nil && dau.Username != "" {
+		c.JSON(http.StatusOK, respErrorCode(errorsx.SocialMediaAccountIsAlreadyInUse, c))
+		return
+	}
+
 	values := c.Request.URL.Query()
 	values.Del("hash")
 

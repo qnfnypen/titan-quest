@@ -112,6 +112,18 @@ func AddTelegramOAuth(ctx context.Context, oauth *model.TelegramOauth) error {
 	return err
 }
 
+func GetTelegramOAuth(ctx context.Context, telegramId int64) (*model.TelegramOauth, error) {
+	query := `select * from telegram_oauth where telegram_user_id  = ? and username <> ''`
+
+	var out model.TelegramOauth
+	err := DB.GetContext(ctx, &out, query, telegramId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &out, nil
+}
+
 func GetTelegramOauthByUsername(ctx context.Context, username string) (*model.TelegramOauth, error) {
 	query := `select * from telegram_oauth where username  = ? and telegram_user_id <> 0`
 
@@ -435,12 +447,12 @@ func GetCreditsList(ctx context.Context, option QueryOption) (int64, []*model.Us
 
 	total := len(userCredits)
 
-	if total <= limit {
-		return int64(total), userCredits, nil
+	if total < offset {
+		return int64(total), nil, nil
 	}
 
-	if total <= offset {
-		return int64(total), nil, nil
+	if total < offset+limit {
+		return int64(total), userCredits[offset:], nil
 	}
 
 	return int64(total), userCredits[offset : offset+limit], nil
