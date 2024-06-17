@@ -429,7 +429,8 @@ func GetCreditsList(ctx context.Context, option QueryOption) (int64, []*model.Us
 
 	var total int64
 
-	countQuery := `select count(1) from ( select t.username from (select username, credit from user_mission union all select username, credit from invite_log) t group by t.username) d`
+	countQuery := `	select count(1) from (
+		select t.username from (select username from user_mission union all select username from invite_log) t group by t.username  limit 500) d `
 	countQueryIn, countQueryParams, err := sqlx.In(countQuery)
 	if err != nil {
 		return 0, nil, err
@@ -441,8 +442,10 @@ func GetCreditsList(ctx context.Context, option QueryOption) (int64, []*model.Us
 	}
 
 	query := `select * from (
-		select t.username, IFNULL(sum(t.credit),0) as credits from (select username, credit from user_mission union all select username, credit from invite_log) t group by t.username
-	) d order by d.credits desc LIMIT ? OFFSET ?;`
+	select * from (
+		select t.username, IFNULL(sum(t.credit),0) as credits from (select username, credit from user_mission union all select username, credit from invite_log) t group by t.username 
+	) d order by d.credits desc limit 500
+	) f LIMIT ? OFFSET ?;`
 
 	var out []*model.UserCredit
 	err = DB.SelectContext(ctx, &out, query, limit, offset)
