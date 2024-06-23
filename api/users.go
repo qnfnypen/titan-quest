@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,11 +28,11 @@ type (
 		Username  string `json:"username"`
 		Token     string `json:"token"`
 		PointJSON string `json:"pointJson"`
-		Type      string `json:"type"`
+		Type      int64  `json:"type"`
 	}
 )
 
-func GetUserInfoHandler(c *gin.Context) {
+func GetUserInfoHandler(c *gin.Context) { /*  */
 	claims := jwt.ExtractClaims(c)
 	username := claims[identityKey].(string)
 	// user, err := dao.GetUserByUsername(c.Request.Context(), username)
@@ -193,13 +194,13 @@ func generateNonceString(ctx context.Context, key string) (string, error) {
 func GetNumericVerifyCodeHandler(c *gin.Context) {
 	userInfo := &model.User{}
 	req := &VerifyCodeReq{}
-	err := c.BindJSON(req)
+	err := c.ShouldBindJSON(req)
 	if err != nil {
 		c.JSON(http.StatusOK, respErrorCode(errors.InvalidParams, c))
 		return
 	}
 	userInfo.Username = req.Username
-	verifyType := req.Type
+	verifyType := strconv.FormatInt(req.Type, 10)
 	lang := c.GetHeader("Lang")
 	userInfo.UserEmail = userInfo.Username
 

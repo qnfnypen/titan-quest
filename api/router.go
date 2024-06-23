@@ -34,7 +34,7 @@ var (
 	watermarkConfig = &config2.WatermarkConfig{
 		FontSize: 12,
 		Color:    color.RGBA{R: 255, G: 255, B: 255, A: 255},
-		Text:     "我的水印",
+		Text:     "",
 	}
 	// 滑动模块配置
 	blockPuzzleConfig = &config2.BlockPuzzleConfig{Offset: 10}
