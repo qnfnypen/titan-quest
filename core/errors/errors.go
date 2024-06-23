@@ -1,9 +1,10 @@
 package errors
 
 import (
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
-	"strings"
 )
 
 const (
@@ -38,6 +39,7 @@ const (
 	InvalidWalletAddress
 	InvalidPublicKey
 	WalletBound
+	CaptchaError
 
 	Unknown = -1
 )
@@ -67,6 +69,7 @@ var ErrMap = map[int]string{
 	InvalidWalletAddress:             "invalid wallet address: 无效的钱包地址",
 	InvalidPublicKey:                 "invalid public key: 无效的公钥地址",
 	WalletBound:                      "wallet has been bound: 钱包已被绑定",
+	CaptchaError:                     "Slide verification failed: 滑块校验失败",
 }
 
 var (

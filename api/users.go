@@ -5,10 +5,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"net/http"
 	"strings"
 	"time"
+
+	constant "github.com/TestsLing/aj-captcha-go/const"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
@@ -17,6 +19,16 @@ import (
 	"github.com/gnasnik/titan-quest/core/generated/model"
 	"github.com/gnasnik/titan-quest/pkg/random"
 	"github.com/go-redis/redis/v9"
+)
+
+type (
+	// VerifyCodeReq 获取邮箱验证码
+	VerifyCodeReq struct {
+		Username  string `json:"username"`
+		Token     string `json:"token"`
+		PointJSON string `json:"pointJson"`
+		Type      string `json:"type"`
+	}
 )
 
 func GetUserInfoHandler(c *gin.Context) {
@@ -180,8 +192,14 @@ func generateNonceString(ctx context.Context, key string) (string, error) {
 
 func GetNumericVerifyCodeHandler(c *gin.Context) {
 	userInfo := &model.User{}
-	userInfo.Username = c.Query("username")
-	verifyType := c.Query("type")
+	req := &VerifyCodeReq{}
+	err := c.BindJSON(req)
+	if err != nil {
+		c.JSON(http.StatusOK, respErrorCode(errors.InvalidParams, c))
+		return
+	}
+	userInfo.Username = req.Username
+	verifyType := req.Type
 	lang := c.GetHeader("Lang")
 	userInfo.UserEmail = userInfo.Username
 
@@ -210,6 +228,14 @@ func GetNumericVerifyCodeHandler(c *gin.Context) {
 	}
 
 	verifyCode := random.GenerateRandomNumber(6)
+
+	// 滑块校验
+	ser := factory.GetService(constant.BlockPuzzleCaptcha)
+	err = ser.Check(req.Token, req.PointJSON)
+	if err != nil {
+		c.JSON(http.StatusOK, respErrorCode(errors.CaptchaError, c))
+		return
+	}
 
 	if err = sendEmail(userInfo.Username, verifyCode, lang); err != nil {
 		log.Errorf("send email: %v", err)
@@ -336,4 +362,11 @@ func BindWalletHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, respJSON(nil))
+}
+
+// GetBlockCaptcha 滑块验证
+func GetBlockCaptcha(c *gin.Context) {
+	data, _ := factory.GetService(constant.BlockPuzzleCaptcha).Get()
+	//输出json结果给调用方
+	c.JSON(200, data)
 }

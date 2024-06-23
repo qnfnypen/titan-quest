@@ -1,12 +1,17 @@
 package api
 
 import (
-	"github.com/bwmarrin/discordgo"
-	"github.com/gnasnik/titan-quest/core/bot/discord"
+	"image/color"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	config2 "github.com/TestsLing/aj-captcha-go/config"
+	constant "github.com/TestsLing/aj-captcha-go/const"
+	"github.com/TestsLing/aj-captcha-go/service"
+	"github.com/bwmarrin/discordgo"
 	"github.com/gnasnik/titan-quest/config"
+	"github.com/gnasnik/titan-quest/core/bot/discord"
+
+	"github.com/gin-gonic/gin"
 	logging "github.com/ipfs/go-log/v2"
 	tele "gopkg.in/telebot.v3"
 )
@@ -17,6 +22,27 @@ var (
 )
 
 var log = logging.Logger("api")
+
+// 行为校验初始化
+var (
+	// 水印配置
+	clickWordConfig = &config2.ClickWordConfig{
+		FontSize: 25,
+		FontNum:  4,
+	}
+	// 点击文字配置
+	watermarkConfig = &config2.WatermarkConfig{
+		FontSize: 12,
+		Color:    color.RGBA{R: 255, G: 255, B: 255, A: 255},
+		Text:     "我的水印",
+	}
+	// 滑动模块配置
+	blockPuzzleConfig = &config2.BlockPuzzleConfig{Offset: 10}
+	// 行为校验配置模块
+	configcap = config2.BuildConfig(constant.MemCacheKey, constant.DefaultResourceRoot, watermarkConfig,
+		clickWordConfig, blockPuzzleConfig, 2*60)
+	factory = service.NewCaptchaServiceFactory(configcap)
+)
 
 func InitBot() {
 	pref := tele.Settings{
@@ -50,6 +76,12 @@ func ServerAPI(cfg *config.Config) {
 	// r.Use(Cors())
 	r.Use(RequestLoggerMiddleware())
 
+	// 人机校验：滑块验证
+	//注册内存缓存
+	factory.RegisterCache(constant.MemCacheKey, service.NewMemCacheService(20))
+	factory.RegisterService(constant.ClickWordCaptcha, service.NewClickWordCaptchaService(factory))
+	factory.RegisterService(constant.BlockPuzzleCaptcha, service.NewBlockPuzzleCaptchaService(factory))
+
 	apiV1 := r.Group("/api/v1")
 	authMiddleware, err := jwtGinMiddleware(cfg.SecretKey)
 	if err != nil {
@@ -71,7 +103,8 @@ func ServerAPI(cfg *config.Config) {
 	user := apiV1.Group("/user")
 	user.GET("/login_before", GetNonceStringHandler)
 	user.POST("/login", authMiddleware.LoginHandler)
-	user.GET("/verify_code", GetNumericVerifyCodeHandler)
+	user.GET("/captcha/block", GetBlockCaptcha)
+	user.POST("/verify_code", GetNumericVerifyCodeHandler)
 	user.POST("/logout", authMiddleware.LogoutHandler)
 	user.GET("/refresh_token", authMiddleware.RefreshHandler)
 
