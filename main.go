@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	config2 "github.com/TestsLing/aj-captcha-go/config"
 	"github.com/gnasnik/titan-quest/api"
 	"github.com/gnasnik/titan-quest/config"
 	"github.com/gnasnik/titan-quest/core/dao"
@@ -35,7 +34,7 @@ func main() {
 		log.Fatalf("initital: %v\n", err)
 	}
 
-	config2.NewConfig().ResourcePath = cfg.ResourcePath
+	api.InitCaptcha()
 
 	go api.ServerAPI(&cfg)
 

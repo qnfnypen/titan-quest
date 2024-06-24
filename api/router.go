@@ -25,23 +25,7 @@ var log = logging.Logger("api")
 
 // 行为校验初始化
 var (
-	// 水印配置
-	clickWordConfig = &config2.ClickWordConfig{
-		FontSize: 25,
-		FontNum:  4,
-	}
-	// 点击文字配置
-	watermarkConfig = &config2.WatermarkConfig{
-		FontSize: 12,
-		Color:    color.RGBA{R: 255, G: 255, B: 255, A: 255},
-		Text:     "",
-	}
-	// 滑动模块配置
-	blockPuzzleConfig = &config2.BlockPuzzleConfig{Offset: 100}
-	// 行为校验配置模块
-	configcap = config2.BuildConfig(constant.MemCacheKey, constant.DefaultResourceRoot, watermarkConfig,
-		clickWordConfig, blockPuzzleConfig, 2*60)
-	factory = service.NewCaptchaServiceFactory(configcap)
+	factory *service.CaptchaServiceFactory
 )
 
 func InitBot() {
@@ -67,7 +51,25 @@ func InitBot() {
 
 	TeleBot = b
 	DCBot = dbot
+}
 
+func InitCaptcha() {
+	// 水印配置
+	clickWordConfig := &config2.ClickWordConfig{
+		FontSize: 25,
+		FontNum:  4,
+	}
+	// 点击文字配置
+	watermarkConfig := &config2.WatermarkConfig{
+		FontSize: 12,
+		Color:    color.RGBA{R: 255, G: 255, B: 255, A: 255},
+		Text:     "",
+	}
+	// 滑动模块配置
+	blockPuzzleConfig := &config2.BlockPuzzleConfig{Offset: 100}
+	configcap := config2.BuildConfig(constant.MemCacheKey, config.Cfg.ResourcePath, watermarkConfig,
+		clickWordConfig, blockPuzzleConfig, 2*60)
+	factory = service.NewCaptchaServiceFactory(configcap)
 }
 
 func ServerAPI(cfg *config.Config) {
@@ -77,6 +79,7 @@ func ServerAPI(cfg *config.Config) {
 	r.Use(RequestLoggerMiddleware())
 
 	// 人机校验：滑块验证
+	// 行为校验配置模块
 	//注册内存缓存
 	factory.RegisterCache(constant.MemCacheKey, service.NewMemCacheService(20))
 	factory.RegisterService(constant.ClickWordCaptcha, service.NewClickWordCaptchaService(factory))
