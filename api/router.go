@@ -37,7 +37,7 @@ var (
 		Text:     "",
 	}
 	// 滑动模块配置
-	blockPuzzleConfig = &config2.BlockPuzzleConfig{Offset: 10}
+	blockPuzzleConfig = &config2.BlockPuzzleConfig{Offset: 100}
 	// 行为校验配置模块
 	configcap = config2.BuildConfig(constant.MemCacheKey, constant.DefaultResourceRoot, watermarkConfig,
 		clickWordConfig, blockPuzzleConfig, 2*60)
