@@ -2,14 +2,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/gnasnik/titan-quest/api"
-	"github.com/gnasnik/titan-quest/config"
-	"github.com/gnasnik/titan-quest/core/dao"
-	"github.com/spf13/viper"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+
+	config2 "github.com/TestsLing/aj-captcha-go/config"
+	"github.com/gnasnik/titan-quest/api"
+	"github.com/gnasnik/titan-quest/config"
+	"github.com/gnasnik/titan-quest/core/dao"
+	"github.com/spf13/viper"
 )
 
 func main() {
@@ -32,6 +34,8 @@ func main() {
 	if err := dao.Init(&cfg); err != nil {
 		log.Fatalf("initital: %v\n", err)
 	}
+
+	config2.NewConfig().ResourcePath = cfg.ResourcePath
 
 	go api.ServerAPI(&cfg)
 

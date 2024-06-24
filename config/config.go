@@ -30,7 +30,8 @@ type Config struct {
 
 	TitanAPI TitanAPIConfig
 
-	GoogleDoc GoogleDocConfig
+	GoogleDoc    GoogleDocConfig
+	ResourcePath string
 }
 
 type TitanAPIConfig struct {
