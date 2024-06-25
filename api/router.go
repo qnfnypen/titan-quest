@@ -66,8 +66,8 @@ func InitCaptcha() {
 		Text:     "",
 	}
 	// 滑动模块配置
-	blockPuzzleConfig := &config2.BlockPuzzleConfig{Offset: 100}
-	configcap := config2.BuildConfig(constant.MemCacheKey, config.Cfg.ResourcePath, watermarkConfig,
+	blockPuzzleConfig := &config2.BlockPuzzleConfig{Offset: 200}
+	configcap := config2.BuildConfig(constant.RedisCacheKey, config.Cfg.ResourcePath, watermarkConfig,
 		clickWordConfig, blockPuzzleConfig, 2*60)
 	factory = service.NewCaptchaServiceFactory(configcap)
 }
@@ -81,7 +81,7 @@ func ServerAPI(cfg *config.Config) {
 	// 人机校验：滑块验证
 	// 行为校验配置模块
 	//注册内存缓存
-	factory.RegisterCache(constant.MemCacheKey, service.NewMemCacheService(20))
+	factory.RegisterCache(constant.RedisCacheKey, service.NewConfigRedisCacheService([]string{config.Cfg.RedisAddr}, "", config.Cfg.RedisPassword, false, 0))
 	factory.RegisterService(constant.ClickWordCaptcha, service.NewClickWordCaptchaService(factory))
 	factory.RegisterService(constant.BlockPuzzleCaptcha, service.NewBlockPuzzleCaptchaService(factory))
 
